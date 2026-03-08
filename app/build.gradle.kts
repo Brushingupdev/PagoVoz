@@ -15,6 +15,10 @@ if (localPropertiesFile.exists()) {
 
 val supabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: ""
 val supabaseKey = localProperties.getProperty("SUPABASE_KEY") ?: ""
+val releaseStoreFile = localProperties.getProperty("RELEASE_STORE_FILE") ?: ""
+val releaseStorePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD") ?: ""
+val releaseKeyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS") ?: ""
+val releaseKeyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD") ?: ""
 
 android {
     namespace = "com.example.pagovoz"
@@ -34,8 +38,34 @@ android {
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
 
+    signingConfigs {
+        create("release") {
+            if (
+                releaseStoreFile.isNotBlank() &&
+                releaseStorePassword.isNotBlank() &&
+                releaseKeyAlias.isNotBlank() &&
+                releaseKeyPassword.isNotBlank()
+            ) {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (
+                releaseStoreFile.isNotBlank() &&
+                releaseStorePassword.isNotBlank() &&
+                releaseKeyAlias.isNotBlank() &&
+                releaseKeyPassword.isNotBlank()
+            ) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
