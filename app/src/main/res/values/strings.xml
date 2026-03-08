@@ -1,0 +1,104 @@
+﻿<resources>
+    <string name="app_name">PagoVoz</string>
+
+    <string name="activation_welcome_title">Bienvenido a PagoVoz</string>
+    <string name="activation_welcome_subtitle">Tu asistente de voz para Yape Negocios</string>
+    <string name="activation_card_title">Activar Licencia</string>
+    <string name="activation_card_description">Ingresa el código que recibiste al adquirir el servicio.</string>
+    <string name="activation_code_label">Código de Activación</string>
+    <string name="activation_button">Activar Dispositivo</string>
+    <string name="activation_support">¿No tienes un código? Contacta a soporte</string>
+    <string name="activation_support_message">Hola, necesito un código de activación para PagoVoz.</string>
+    <string name="activation_error_empty_code">Por favor, ingresa un código</string>
+    <string name="activation_error_invalid_code">Código inválido o ya vinculado a otro equipo</string>
+
+    <string name="trial_modal_title">¡Mes de Promoción Activado! 🎁</string>
+    <string name="trial_modal_body_1">Para potenciar tu negocio desde el primer día, te obsequiamos 7 días de acceso total a nuestras herramientas avanzadas.</string>
+    <string name="trial_modal_body_2">Genera reportes PDF, revisa tu historial detallado y optimiza tus ventas sin límites.</string>
+    <string name="trial_modal_confirm">Comenzar Experiencia Pro</string>
+
+    <string name="delete_dialog_title">¿Limpiar historial?</string>
+    <string name="delete_dialog_body">Esta acción borrará todos los pagos registrados hoy y reiniciará el contador a S/ 0.00.</string>
+    <string name="delete_dialog_confirm">Limpiar todo</string>
+    <string name="delete_dialog_cancel">Cancelar</string>
+
+    <string name="dashboard_title">PagoVoz Dashboard</string>
+    <string name="battery_warning_title">¡Atención!</string>
+    <string name="battery_warning_body">Desactiva la optimización de batería para no perder ningún pago.</string>
+    <string name="battery_warning_open_settings">Configurar</string>
+    <string name="battery_warning_dismiss">No mostrar de nuevo</string>
+    <string name="battery_warning_show_again">Volver a mostrar alerta de batería</string>
+    <string name="control_tools_title">Herramientas de Control</string>
+    <string name="tool_history_title">Ver Historial de Pagos</string>
+    <string name="tool_history_subtitle">Lista detallada de hoy</string>
+    <string name="tool_reports_title">Gestión de Reportes</string>
+    <string name="tool_reports_subtitle">Generar, previsualizar y compartir</string>
+    <string name="tool_clear_title">Limpiar Historial del Día</string>
+    <string name="tool_clear_subtitle">Reiniciar contadores</string>
+
+    <string name="premium_days_left">Beneficio Premium: %1$d días restantes.</string>
+    <string name="premium_trial_title">Premium temporal activo</string>
+    <string name="premium_badge_label">PRO</string>
+    <string name="premium_trial_hint">Mientras dure la prueba, tienes funciones premium habilitadas.</string>
+    <string name="premium_linked_device">Tu suscripción está vinculada a este dispositivo correctamente.</string>
+
+    <string name="reports_title">Gestión de Reportes</string>
+    <string name="reports_no_yesterday_data">No hay datos de ayer disponibles.</string>
+    <string name="reports_preview_title">Previsualización rápida:</string>
+    <string name="reports_today">Reporte de Hoy</string>
+    <string name="reports_yesterday">Reporte de Ayer</string>
+    <string name="reports_tab_today">HOY</string>
+    <string name="reports_tab_yesterday">AYER</string>
+    <string name="reports_label_date">Fecha:</string>
+    <string name="reports_label_total_sales">Ventas totales:</string>
+    <string name="reports_label_transactions">Cant. Transacciones:</string>
+    <string name="reports_empty_transactions">Sin transacciones registradas</string>
+    <string name="reports_and_more">... y %1$d más</string>
+    <string name="reports_share_whatsapp">Compartir por WhatsApp</string>
+    <string name="reports_download_pdf">Descargar Reporte PDF</string>
+    <string name="reports_share_text">Adjunto el reporte de pagos del día %1$s. Total recaudado: S/ %2$s</string>
+    <string name="reports_share_chooser">Compartir reporte</string>
+    <string name="reports_share_error">Error al compartir: %1$s</string>
+    <string name="reports_pdf_title">Reporte de Ventas - PagoVoz Pro</string>
+    <string name="reports_pdf_date">Fecha del reporte: %1$s</string>
+    <string name="reports_pdf_total">Total Neto Recaudado: S/ %1$s</string>
+    <string name="reports_pdf_continuation">(Continuación reporte %1$s - pág %2$d)</string>
+    <string name="reports_pdf_download_ok">Reporte PDF descargado correctamente</string>
+    <string name="reports_pdf_download_error">Error al guardar el reporte</string>
+
+    <string name="history_title">Historial del Día</string>
+    <string name="payment_item_title">Confirmación de Pago, %1$s</string>
+    <string name="history_empty">No hay registros disponibles por el momento.</string>
+    <string name="currency_amount">S/ %1$s</string>
+
+    <string name="summary_total_today">Total Recaudado Hoy</string>
+    <string name="summary_payments_count">%1$d pagos recibidos</string>
+    <string name="status_active_title">Servicio Activo</string>
+    <string name="status_inactive_title">Servicio Detenido</string>
+    <string name="status_active_subtitle">Escuchando pagos de Yape</string>
+    <string name="status_inactive_subtitle">Falta permiso de lectura</string>
+    <string name="status_activate_button">Activar</string>
+    <string name="footer_premium_active">⭐ Gestión Premium Activa</string>
+    <string name="footer_upgrade_premium">Pasar a Plan Premium</string>
+
+    <string name="premium_plan_title">Mi Plan PagoVoz</string>
+    <string name="premium_status_title">¡Eres PagoVoz Pro! 🚀</string>
+    <string name="premium_status_subtitle">Estás disfrutando de la experiencia completa sin límites.</string>
+    <string name="premium_benefits_active">Beneficios Activos:</string>
+    <string name="premium_benefit_sales_today_yesterday">Reportes de ventas HOY y AYER</string>
+    <string name="premium_benefit_unlimited_pdf">Exportación ilimitada a PDF</string>
+    <string name="premium_benefit_whatsapp_send">Envío directo por WhatsApp</string>
+    <string name="premium_benefit_no_ads">Sin anuncios ni interrupciones</string>
+    <string name="premium_benefit_priority_support">Soporte técnico prioritario</string>
+    <string name="premium_back_panel">VOLVER AL PANEL</string>
+    <string name="premium_info_title">Plan PagoVoz Pro</string>
+    <string name="premium_business_title">Eleva tu Negocio</string>
+    <string name="premium_business_subtitle">Lleva el control total de tus cobros con herramientas de auditoría y reportes automatizados.</string>
+    <string name="premium_benefit_unlimited_reports">Reportes PDF profesionales ilimitados</string>
+    <string name="premium_benefit_detailed_history">Historial detallado de transacciones</string>
+    <string name="premium_benefit_real_time_management">Gestión de ventas en tiempo real</string>
+    <string name="premium_benefit_support_247">Soporte prioritario 24/7</string>
+    <string name="premium_request_access">SOLICITAR ACCESO PRO</string>
+    <string name="premium_back_main">VOLVER AL PANEL PRINCIPAL</string>
+    <string name="premium_whatsapp_message">Hola, me interesa adquirir el Plan Premium de PagoVoz Pro.</string>
+</resources>
