@@ -2,6 +2,8 @@ package com.example.pagovoz
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
@@ -38,10 +40,37 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pagovoz.ui.theme.YapeCyan
 import com.example.pagovoz.ui.theme.YapePurple
+import java.util.Locale
 
 fun isBatteryOptimizationDisabled(context: Context): Boolean {
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
+}
+
+fun isLikelyRestrictedSettingsBlocked(context: Context, hasNotificationPermission: Boolean): Boolean {
+    if (hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+    return try {
+        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            context.packageManager.getInstallSourceInfo(context.packageName).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getInstallerPackageName(context.packageName)
+        }
+        installer == null || installer != "com.android.vending"
+    } catch (_: Exception) {
+        false
+    }
+}
+
+fun manufacturerHint(): String {
+    return when (Build.MANUFACTURER.lowercase(Locale.ROOT)) {
+        "xiaomi", "redmi", "poco" -> "Luego activa Inicio automatico y Bateria sin restricciones."
+        "samsung" -> "Luego activa Uso de bateria sin restricciones para PagoVoz."
+        "oppo", "realme", "oneplus" -> "Luego activa Inicio automatico y Permitir actividad en segundo plano."
+        "huawei", "honor" -> "Luego agrega PagoVoz en Apps protegidas o Inicio de aplicaciones."
+        "motorola" -> "Luego desactiva optimizacion de bateria para PagoVoz."
+        else -> "Luego revisa bateria e inicio automatico para que no se detenga el servicio."
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,6 +209,11 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            val showRestrictedSettingsHint = isLikelyRestrictedSettingsBlocked(
+                context = context,
+                hasNotificationPermission = uiState.isPermissionEnabled
+            )
+
             SummaryCard(total = uiState.dailyTotal, count = uiState.dailyCount)
 
             StatusCard(
@@ -189,6 +223,75 @@ fun HomeScreen(
                     context.startActivity(intent)
                 }
             )
+
+            if (showRestrictedSettingsHint) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                    border = BorderStroke(1.dp, Color(0xFF43A047))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF2E7D32))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    stringResource(R.string.restricted_settings_title),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20)
+                                )
+                                Text(
+                                    text = stringResource(R.string.restricted_settings_body),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF1B5E20)
+                                )
+                                Text(
+                                    text = manufacturerHint(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF1B5E20),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    val intent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                Text(
+                                    stringResource(R.string.restricted_settings_open_app_info),
+                                    color = Color(0xFF1B5E20),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                Text(
+                                    stringResource(R.string.restricted_settings_open_notification_access),
+                                    color = Color(0xFF1B5E20),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             if (!isBatteryOptimizationOff && !batteryWarningDismissed) {
                 Card(

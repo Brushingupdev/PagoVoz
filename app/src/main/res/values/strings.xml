@@ -78,6 +78,10 @@
     <string name="status_active_subtitle">Escuchando pagos de Yape</string>
     <string name="status_inactive_subtitle">Falta permiso de lectura</string>
     <string name="status_activate_button">Activar</string>
+    <string name="restricted_settings_title">Activa ajustes restringidos</string>
+    <string name="restricted_settings_body">En Android 13 o superior, si instalaste por APK puede bloquearse el permiso. Ve a Info de app, menu de 3 puntos y habilita Permitir ajustes restringidos.</string>
+    <string name="restricted_settings_open_app_info">Abrir Info app</string>
+    <string name="restricted_settings_open_notification_access">Abrir acceso</string>
     <string name="footer_premium_active">⭐ Gestión Premium Activa</string>
     <string name="footer_upgrade_premium">Pasar a Plan Premium</string>
 
