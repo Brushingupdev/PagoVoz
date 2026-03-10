@@ -14,7 +14,7 @@ object PaymentNotificationParser {
     }
 
     fun parse(packageName: String, fullText: String): ParsedPayment? {
-        val normalized = fullText.replace("\n", " ").trim()
+        val normalized = normalizeText(fullText)
         return when (packageName) {
             YAPE_PACKAGE -> parseYape(normalized)
             PLIN_PACKAGE -> parsePlin(normalized)
@@ -25,7 +25,7 @@ object PaymentNotificationParser {
     private fun parseYape(text: String): ParsedPayment? {
         val amountPattern = """S/\.?\s*(\d+(?:[\.,]\d{1,2})?)"""
         val regex1 = Regex(
-            """(?:Confirmaci[oóÃ³]n de pago(?: Yape!)?\s+)?(.+?)\s+te\s+(?:envió|enviÃ³|ha enviado)(?:\s+un pago por)?\s+$amountPattern(?:\s+por\s+Yape)?""",
+            """(?:Confirmaci[o\u00F3]n de pago(?: Yape!)?\s+)?(.+?)\s+te\s+(?:envi\u00F3|ha enviado)(?:\s+un pago por)?\s+$amountPattern(?:\s+por\s+Yape)?""",
             RegexOption.IGNORE_CASE
         )
         val regex2 = Regex("""(?:Recibiste|Has recibido)\s+$amountPattern\s+de\s+(.+)$""", RegexOption.IGNORE_CASE)
@@ -55,7 +55,7 @@ object PaymentNotificationParser {
     private fun parsePlin(text: String): ParsedPayment? {
         val amountPattern = """S/\.?\s*(\d+(?:[\.,]\d{1,2})?)"""
         val regex1 = Regex("""$amountPattern\s+(?:de|de parte de)\s+(.+)$""", RegexOption.IGNORE_CASE)
-        val regex2 = Regex("""(.+?)\s+te\s+(?:plineó|plineÃ³|envió|enviÃ³)\s+$amountPattern(?:\s|$)""", RegexOption.IGNORE_CASE)
+        val regex2 = Regex("""(.+?)\s+te\s+(?:pline\u00F3|envi\u00F3)\s+$amountPattern(?:\s|$)""", RegexOption.IGNORE_CASE)
 
         regex1.find(text)?.let {
             val amount = it.groupValues[1].replace(",", ".").toDoubleOrNull()
@@ -73,13 +73,33 @@ object PaymentNotificationParser {
     }
 
     private fun cleanSender(name: String): String {
-        return name
-            .replace("Confirmación de Pago Yape!", "", ignoreCase = true)
-            .replace("ConfirmaciÃ³n de Pago Yape!", "", ignoreCase = true)
-            .replace("¡Yape!", "", ignoreCase = true)
-            .replace("Â¡Yape!", "", ignoreCase = true)
+        return normalizeText(name)
+            .replace("Confirmaci\u00F3n de pago Yape!", "", ignoreCase = true)
+            .replace("Confirmaci\u00F3n de Pago Yape!", "", ignoreCase = true)
+            .replace("\u00A1Yape!", "", ignoreCase = true)
             .replace("Yape!", "", ignoreCase = true)
             .trimEnd('.', ',', ';', ':')
+            .trim()
+    }
+
+    private fun normalizeText(value: String): String {
+        return value
+            .replace("\n", " ")
+            .replace("Ã³", "\u00F3")
+            .replace("Ã“", "\u00D3")
+            .replace("Ã­", "\u00ED")
+            .replace("Ã", "\u00CD")
+            .replace("Ã¡", "\u00E1")
+            .replace("Ã", "\u00C1")
+            .replace("Ã©", "\u00E9")
+            .replace("Ã‰", "\u00C9")
+            .replace("Ãº", "\u00FA")
+            .replace("Ãš", "\u00DA")
+            .replace("Ã±", "\u00F1")
+            .replace("Ã‘", "\u00D1")
+            .replace("Â¡", "\u00A1")
+            .replace("Ã‚Â¡", "\u00A1")
+            .replace(Regex("\\s+"), " ")
             .trim()
     }
 }

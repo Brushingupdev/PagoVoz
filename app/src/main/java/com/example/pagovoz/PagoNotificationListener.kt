@@ -16,7 +16,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(tag, "Servicio creado")
+        logDebug("Servicio creado")
         tts = TextToSpeech(this, this)
     }
 
@@ -24,7 +24,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         if (status == TextToSpeech.SUCCESS) {
             tts.language = Locale.forLanguageTag("es-PE")
             ttsReady = true
-            Log.d(tag, "TTS inicializado")
+            logDebug("TTS inicializado")
         }
     }
 
@@ -45,15 +45,13 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         val bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
         val fullText = "$title $text $bigText".replace("\n", " ").trim()
 
-        Log.d(tag, "[$packageName] Notificación completa: $fullText")
-
         val parsed = PaymentNotificationParser.parse(packageName, fullText)
         if (parsed == null) {
-            Log.w(tag, "No se reconoció el formato de pago en: $fullText")
+            logDebug("No se reconocio un formato de pago compatible para $packageName")
             return
         }
 
-        Log.i(tag, "Pago detectado: S/ ${parsed.amount} de ${parsed.sender}")
+        logDebug("Pago detectado desde $packageName")
         SessionManager.addPayment(this, parsed.amount, parsed.sender)
 
         if (ttsReady) {
@@ -104,5 +102,11 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             tts.shutdown()
         }
         super.onDestroy()
+    }
+
+    private fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(tag, message)
+        }
     }
 }

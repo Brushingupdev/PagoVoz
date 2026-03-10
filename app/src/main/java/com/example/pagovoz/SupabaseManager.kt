@@ -101,7 +101,7 @@ object SupabaseManager {
         val lastCheck = prefs.getLong("last_premium_check", 0L)
         val minInterval = if (BuildConfig.DEBUG) DEBUG_CHECK_INTERVAL_MS else RELEASE_CHECK_INTERVAL_MS
 
-        if ((System.currentTimeMillis() - lastCheck) < minInterval) {
+        if (!force && (System.currentTimeMillis() - lastCheck) < minInterval) {
             return SessionManager.isPremium(context)
         }
 

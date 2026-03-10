@@ -8,7 +8,7 @@ class PaymentNotificationParserTest {
 
     @Test
     fun `parse Yape confirmation with sender and amount`() {
-        val text = "Confirmación de pago Yape! Juan Perez te envió S/ 12.50 por Yape"
+        val text = "Confirmaci\u00F3n de pago Yape! Juan Perez te envi\u00F3 S/ 12.50 por Yape"
 
         val result = PaymentNotificationParser.parse(PaymentNotificationParser.YAPE_PACKAGE, text)
 
@@ -30,7 +30,7 @@ class PaymentNotificationParserTest {
 
     @Test
     fun `parse Plin format`() {
-        val text = "Carlos te plineó S/ 8.90"
+        val text = "Carlos te pline\u00F3 S/ 8.90"
 
         val result = PaymentNotificationParser.parse(PaymentNotificationParser.PLIN_PACKAGE, text)
 
@@ -46,5 +46,27 @@ class PaymentNotificationParserTest {
         val result = PaymentNotificationParser.parse("com.fake.app", text)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `parse mojibake Yape text`() {
+        val text = "ConfirmaciÃ³n de pago Yape! Rosa DÃ­az te enviÃ³ S/ 15.40 por Yape"
+
+        val result = PaymentNotificationParser.parse(PaymentNotificationParser.YAPE_PACKAGE, text)
+
+        requireNotNull(result)
+        assertEquals("Rosa D\u00EDaz", result.sender)
+        assertEquals(15.40, result.amount, 0.001)
+    }
+
+    @Test
+    fun `parse mojibake Plin text`() {
+        val text = "Carlos te plineÃ³ S/ 8.90"
+
+        val result = PaymentNotificationParser.parse(PaymentNotificationParser.PLIN_PACKAGE, text)
+
+        requireNotNull(result)
+        assertEquals("Carlos", result.sender)
+        assertEquals(8.90, result.amount, 0.001)
     }
 }

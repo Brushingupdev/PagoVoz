@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -26,12 +27,14 @@ object SessionManager {
     private const val KEY_LAST_PREMIUM_CHECK = "last_premium_check"
     private const val KEY_TRIAL_MODAL_SHOWN = "trial_modal_shown"
     private const val KEY_TOTAL_AMOUNT = "total_amount"
+    private const val KEY_TOTAL_AMOUNT_CENTS = "total_amount_cents"
     private const val KEY_TOTAL_COUNT = "total_count"
     private const val KEY_PAYMENTS_JSON = "payments_history"
     private const val KEY_LAST_RESET_DATE = "last_reset_date"
     private const val KEY_BATTERY_WARNING_DISMISSED = "battery_warning_dismissed"
 
     private const val KEY_YESTERDAY_TOTAL = "yesterday_total"
+    private const val KEY_YESTERDAY_TOTAL_CENTS = "yesterday_total_cents"
     private const val KEY_YESTERDAY_COUNT = "yesterday_count"
     private const val KEY_YESTERDAY_HISTORY = "yesterday_history"
     private const val KEY_YESTERDAY_DATE = "yesterday_date"
@@ -88,6 +91,7 @@ object SessionManager {
 
             prefs.edit()
                 .putFloat(KEY_YESTERDAY_TOTAL, lastTotal)
+                .putLong(KEY_YESTERDAY_TOTAL_CENTS, readAmountCents(prefs, KEY_TOTAL_AMOUNT_CENTS, KEY_TOTAL_AMOUNT))
                 .putInt(KEY_YESTERDAY_COUNT, lastCount)
                 .putString(KEY_YESTERDAY_HISTORY, lastHistory)
                 .putString(KEY_YESTERDAY_DATE, lastDate)
@@ -100,6 +104,7 @@ object SessionManager {
     fun resetDailyTotals(context: Context) {
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit()
             .putFloat(KEY_TOTAL_AMOUNT, 0f)
+            .putLong(KEY_TOTAL_AMOUNT_CENTS, 0L)
             .putInt(KEY_TOTAL_COUNT, 0)
             .putString(KEY_PAYMENTS_JSON, "[]")
             .putString(KEY_LAST_RESET_DATE, LocalDate.now().toString())
@@ -111,7 +116,8 @@ object SessionManager {
         resetIfNewDay(context)
 
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        val currentTotal = prefs.getFloat(KEY_TOTAL_AMOUNT, 0f)
+        val currentTotalCents = readAmountCents(prefs, KEY_TOTAL_AMOUNT_CENTS, KEY_TOTAL_AMOUNT)
+        val amountCents = amountToCents(amount)
         val currentCount = prefs.getInt(KEY_TOTAL_COUNT, 0)
 
         val history = getPaymentHistory(context).toMutableList()
@@ -119,7 +125,8 @@ object SessionManager {
         val historyJson = Json.encodeToString(history)
 
         prefs.edit()
-            .putFloat(KEY_TOTAL_AMOUNT, currentTotal + amount.toFloat())
+            .putFloat(KEY_TOTAL_AMOUNT, centsToFloat(currentTotalCents + amountCents))
+            .putLong(KEY_TOTAL_AMOUNT_CENTS, currentTotalCents + amountCents)
             .putInt(KEY_TOTAL_COUNT, currentCount + 1)
             .putString(KEY_PAYMENTS_JSON, historyJson)
             .apply()
@@ -138,13 +145,25 @@ object SessionManager {
     }
 
     fun getDailyTotal(context: Context): Float =
-        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).getFloat(KEY_TOTAL_AMOUNT, 0f)
+        centsToFloat(
+            readAmountCents(
+                context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE),
+                KEY_TOTAL_AMOUNT_CENTS,
+                KEY_TOTAL_AMOUNT
+            )
+        )
 
     fun getDailyCount(context: Context): Int =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).getInt(KEY_TOTAL_COUNT, 0)
 
     fun getYesterdayTotal(context: Context): Float =
-        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).getFloat(KEY_YESTERDAY_TOTAL, 0f)
+        centsToFloat(
+            readAmountCents(
+                context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE),
+                KEY_YESTERDAY_TOTAL_CENTS,
+                KEY_YESTERDAY_TOTAL
+            )
+        )
 
     fun getYesterdayCount(context: Context): Int =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).getInt(KEY_YESTERDAY_COUNT, 0)
@@ -172,4 +191,21 @@ object SessionManager {
             .putBoolean(KEY_BATTERY_WARNING_DISMISSED, dismissed)
             .apply()
     }
+
+    private fun readAmountCents(
+        prefs: android.content.SharedPreferences,
+        centsKey: String,
+        legacyFloatKey: String
+    ): Long {
+        return if (prefs.contains(centsKey)) {
+            prefs.getLong(centsKey, 0L)
+        } else {
+            amountToCents(prefs.getFloat(legacyFloatKey, 0f).toDouble())
+        }
+    }
+
+    private fun amountToCents(amount: Double): Long =
+        (amount * 100).toBigDecimal().setScale(0, RoundingMode.HALF_UP).longValueExact()
+
+    private fun centsToFloat(cents: Long): Float = cents.toFloat() / 100f
 }
