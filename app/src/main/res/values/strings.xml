@@ -12,7 +12,7 @@
     <string name="activation_error_empty_code">Por favor, ingresa un código</string>
     <string name="activation_error_invalid_code">Código inválido o ya vinculado a otro equipo</string>
 
-    <string name="trial_modal_title">¡Mes de Promoción Activado! 🎁</string>
+    <string name="trial_modal_title">¡Semana de Promoción Activada! 🎁</string>
     <string name="trial_modal_body_1">Para potenciar tu negocio desde el primer día, te obsequiamos 7 días de acceso total a nuestras herramientas avanzadas.</string>
     <string name="trial_modal_body_2">Genera reportes PDF, revisa tu historial detallado y optimiza tus ventas sin límites.</string>
     <string name="trial_modal_confirm">Comenzar Experiencia Pro</string>
