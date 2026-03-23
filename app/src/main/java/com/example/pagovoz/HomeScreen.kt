@@ -545,24 +545,23 @@ private fun TrialPromoDialog(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xB81A1830).copy(alpha = 0.72f * overlayAlpha))
-                .padding(horizontal = 32.dp, vertical = 40.dp),
+                .padding(horizontal = 20.dp, vertical = 28.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp)
                     .graphicsLayer {
                         alpha = contentAlpha
                         scaleX = contentScale
                         scaleY = contentScale
                     },
-                shape = RoundedCornerShape(30.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.xl)
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
@@ -577,19 +576,19 @@ private fun TrialPromoDialog(
                                     )
                                 )
                             )
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
                     ) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .size(56.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(Color(0x14A855F7))
                         )
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .size(42.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
                                 .background(Color(0x1400D6C2))
                         )
@@ -612,22 +611,22 @@ private fun TrialPromoDialog(
                             }
 
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 TrialBrandBadge(
                                     logoRes = R.drawable.yape,
                                     contentDescription = "Yape",
-                                    size = 54.dp
+                                    size = 44.dp
                                 )
                                 TrialBrandBadge(
                                     logoRes = R.drawable.plin,
                                     contentDescription = "Plin",
-                                    size = 52.dp
+                                    size = 42.dp
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
                             Surface(
                                 shape = RoundedCornerShape(999.dp),
@@ -637,26 +636,26 @@ private fun TrialPromoDialog(
                                     text = stringResource(R.string.trial_modal_badge),
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     letterSpacing = 0.9.sp,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 5.dp)
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
                                 text = stringResource(R.string.trial_modal_title_new),
                                 color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.titleLarge,
+                                style = MaterialTheme.typography.headlineSmall,
                                 textAlign = TextAlign.Center,
-                                lineHeight = 29.sp
+                                lineHeight = 25.sp
                             )
 
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     TrialBenefitItem(
                         title = stringResource(R.string.trial_modal_benefit_title_1),
@@ -671,13 +670,13 @@ private fun TrialPromoDialog(
                         subtitle = stringResource(R.string.trial_modal_benefit_subtitle_3)
                     )
 
-                    Spacer(modifier = Modifier.height(26.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     Button(
                         onClick = onConfirm,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(18.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = AppElevation.md)
@@ -689,15 +688,15 @@ private fun TrialPromoDialog(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = stringResource(R.string.trial_modal_legal),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
-                        lineHeight = 17.sp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        lineHeight = 15.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
             }
@@ -727,37 +726,37 @@ private fun TrialBenefitItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.Top
     ) {
         Surface(
-            modifier = Modifier.padding(top = 2.dp),
+            modifier = Modifier.padding(top = 1.dp),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer
         ) {
             Box(
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(12.dp)
                 )
             }
         }
-        Column(modifier = Modifier.padding(start = 12.dp)) {
+        Column(modifier = Modifier.padding(start = 10.dp)) {
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleSmall
             )
             Text(
                 text = subtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 18.sp
+                style = MaterialTheme.typography.bodySmall,
+                lineHeight = 16.sp
             )
         }
     }
