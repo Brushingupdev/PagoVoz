@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
-import com.example.pagovoz.ui.theme.PagoVozTheme
+import com.example.pagovoz.ui.theme.HablaPagoTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            PagoVozTheme {
+            HablaPagoTheme {
                 val context = LocalContext.current
                 var isActive by remember { mutableStateOf(SessionManager.isActive(context)) }
                 var pendingNotificationAccessSettings by remember { mutableStateOf(false) }

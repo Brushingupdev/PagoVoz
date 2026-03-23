@@ -12,6 +12,7 @@ data class HomeUiState(
     val isPermissionEnabled: Boolean = false,
     val dailyTotal: Float = 0f,
     val dailyCount: Int = 0,
+    val recentPayments: List<PaymentRecord> = emptyList(),
     val showDeleteConfirm: Boolean = false,
     val showTrialModal: Boolean = false,
     val isPremium: Boolean = false,
@@ -45,6 +46,9 @@ class HomeViewModel(
                 isPermissionEnabled = isNotificationEnabled(),
                 dailyTotal = sessionRepository.getDailyTotal(),
                 dailyCount = sessionRepository.getDailyCount(),
+                recentPayments = sessionRepository.getPaymentHistory()
+                    .sortedByDescending { payment -> payment.timestamp }
+                    .take(4),
                 showTrialModal = !sessionRepository.isTrialModalShown(),
                 isPremium = sessionRepository.isPremium(),
                 trialDays = sessionRepository.getPremiumDaysLeft()

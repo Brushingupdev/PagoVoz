@@ -10,7 +10,8 @@ import kotlinx.coroutines.launch
 
 data class AppNavigationUiState(
     val currentScreen: String = "home",
-    val isPremium: Boolean = false
+    val isPremium: Boolean = false,
+    val historyOpenedFromRecent: Boolean = false
 )
 
 class AppNavigationViewModel(
@@ -27,7 +28,9 @@ class AppNavigationViewModel(
         started = true
         refreshPremium()
         observeSessionUpdates()
-        licenseRepository.listenForPremiumChanges()
+        runCatching {
+            licenseRepository.listenForPremiumChanges()
+        }
     }
 
     private fun observeSessionUpdates() {
@@ -43,19 +46,35 @@ class AppNavigationViewModel(
     }
 
     fun openHome() {
-        _uiState.update { it.copy(currentScreen = "home") }
+        _uiState.update { it.copy(currentScreen = "home", historyOpenedFromRecent = false) }
     }
 
     fun openHistory() {
-        _uiState.update { it.copy(currentScreen = "history") }
+        _uiState.update { it.copy(currentScreen = "history", historyOpenedFromRecent = false) }
+    }
+
+    fun openHistoryFromRecent() {
+        _uiState.update { it.copy(currentScreen = "history", historyOpenedFromRecent = true) }
+    }
+
+    fun openPayments() {
+        _uiState.update { it.copy(currentScreen = "payments", historyOpenedFromRecent = false) }
     }
 
     fun openReports() {
-        _uiState.update { it.copy(currentScreen = "reports") }
+        _uiState.update { it.copy(currentScreen = "reports", historyOpenedFromRecent = false) }
+    }
+
+    fun openVoiceSettings() {
+        _uiState.update { it.copy(currentScreen = "voice_settings", historyOpenedFromRecent = false) }
+    }
+
+    fun openProfile() {
+        _uiState.update { it.copy(currentScreen = "profile", historyOpenedFromRecent = false) }
     }
 
     fun openPremium() {
         refreshPremium()
-        _uiState.update { it.copy(currentScreen = "premium") }
+        _uiState.update { it.copy(currentScreen = "premium", historyOpenedFromRecent = false) }
     }
 }

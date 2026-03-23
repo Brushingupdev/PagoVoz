@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 class ActivationViewModelFactory(
     private val licenseRepository: LicenseRepository,
     private val emptyCodeError: String,
+    private val codeFormatError: String,
     private val invalidCodeError: String
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -15,6 +16,7 @@ class ActivationViewModelFactory(
             return ActivationViewModel(
                 licenseRepository = licenseRepository,
                 emptyCodeError = emptyCodeError,
+                codeFormatError = codeFormatError,
                 invalidCodeError = invalidCodeError
             ) as T
         }

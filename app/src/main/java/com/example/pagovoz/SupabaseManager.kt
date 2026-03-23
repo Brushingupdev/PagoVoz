@@ -9,11 +9,12 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -65,17 +66,25 @@ object SupabaseManager {
     private const val DEBUG_CHECK_INTERVAL_MS = 30_000L
     private const val RELEASE_CHECK_INTERVAL_MS = 5 * 60 * 1000L
 
-    val client = createSupabaseClient(
-        supabaseUrl = SUPABASE_URL,
-        supabaseKey = SUPABASE_KEY
-    ) {
-        install(Postgrest)
-        install(Realtime)
+    // Scope único vinculado al proceso — evita coroutines huérfanas
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val client by lazy {
+        runCatching {
+            createSupabaseClient(
+                supabaseUrl = SUPABASE_URL,
+                supabaseKey = SUPABASE_KEY
+            ) {
+                install(Postgrest)
+                install(Realtime)
+            }
+        }.getOrNull()
     }
 
     fun listenForPremiumChanges(context: Context) {
+        val supabaseClient = client ?: return
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-        val channel = client.realtime.channel("license-updates")
+        val channel = supabaseClient.realtime.channel("license-updates")
 
         channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "licenses"
@@ -84,14 +93,12 @@ object SupabaseManager {
             val recordDeviceId = change.record["device_id"]?.jsonPrimitive?.content
             if (recordDeviceId == androidId) {
                 // Si el cambio es para este equipo, forzamos refresco
-                CoroutineScope(Dispatchers.IO).launch {
-                    checkPremiumStatus(context, force = true)
-                }
+                checkPremiumStatus(context, force = true)
             }
-        }.launchIn(CoroutineScope(Dispatchers.IO))
+        }.launchIn(applicationScope)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            client.realtime.connect()
+        applicationScope.launch {
+            supabaseClient.realtime.connect()
             channel.subscribe()
         }
     }
@@ -106,9 +113,10 @@ object SupabaseManager {
         }
 
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val supabaseClient = client ?: return SessionManager.isPremium(context)
 
         return try {
-            val response = client.postgrest.rpc(
+            val response = supabaseClient.postgrest.rpc(
                 function = "get_premium_status",
                 parameters = PremiumStatusParams(p_device_id = androidId)
             )
@@ -126,9 +134,10 @@ object SupabaseManager {
 
     suspend fun validarCodigo(context: Context, inputCode: String): Boolean {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val supabaseClient = client ?: return false
 
         return try {
-            val result = client.postgrest.rpc(
+            val result = supabaseClient.postgrest.rpc(
                 function = "activate_license",
                 parameters = ActivateLicenseParams(
                     p_code = inputCode,
@@ -148,15 +157,16 @@ object SupabaseManager {
     }
 
     suspend fun checkAppUpdate(): AppConfig? {
+        val supabaseClient = client ?: return null
         return try {
-            client.from("app_config").select().decodeSingleOrNull<AppConfig>()
+            supabaseClient.from("app_config").select().decodeSingleOrNull<AppConfig>()
         } catch (e: Exception) {
             null
         }
     }
 
     fun startPremiumCheckInBackground(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
+        applicationScope.launch {
             checkPremiumStatus(context)
         }
     }

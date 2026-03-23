@@ -6,26 +6,54 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,18 +61,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.pagovoz.ui.theme.AppColors
+import com.example.pagovoz.ui.theme.AppElevation
+import com.example.pagovoz.ui.theme.AppRadii
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.pagovoz.ui.theme.YapeCyan
 import com.example.pagovoz.ui.theme.YapePurple
 import java.util.Locale
 
 fun isBatteryOptimizationDisabled(context: Context): Boolean {
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
+}
+
+fun isNotificationServiceEnabled(context: Context): Boolean {
+    val pkgName = context.packageName
+    val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+    return flat != null && flat.contains(pkgName)
 }
 
 fun isLikelyRestrictedSettingsBlocked(context: Context, hasNotificationPermission: Boolean): Boolean {
@@ -65,20 +103,23 @@ fun isLikelyRestrictedSettingsBlocked(context: Context, hasNotificationPermissio
 fun manufacturerHint(): String {
     return when (Build.MANUFACTURER.lowercase(Locale.ROOT)) {
         "xiaomi", "redmi", "poco" -> "Luego activa Inicio automatico y Bateria sin restricciones."
-        "samsung" -> "Luego activa Uso de bateria sin restricciones para PagoVoz."
+        "samsung" -> "Luego activa Uso de bateria sin restricciones para HablaPago."
         "oppo", "realme", "oneplus" -> "Luego activa Inicio automatico y Permitir actividad en segundo plano."
-        "huawei", "honor" -> "Luego agrega PagoVoz en Apps protegidas o Inicio de aplicaciones."
-        "motorola" -> "Luego desactiva optimizacion de bateria para PagoVoz."
+        "huawei", "honor" -> "Luego agrega HablaPago en Apps protegidas o Inicio de aplicaciones."
+        "motorola" -> "Luego desactiva optimizacion de bateria para HablaPago."
         else -> "Luego revisa bateria e inicio automatico para que no se detenga el servicio."
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onShowHistory: () -> Unit,
+    onShowRecentHistory: () -> Unit,
+    onShowPayments: () -> Unit,
     onShowPremium: () -> Unit,
-    onShowReports: () -> Unit
+    onShowReports: () -> Unit,
+    onShowVoiceSettings: () -> Unit,
+    onShowProfile: () -> Unit
 ) {
     val context = LocalContext.current
     var isBatteryOptimizationOff by remember { mutableStateOf(isBatteryOptimizationDisabled(context)) }
@@ -106,252 +147,251 @@ fun HomeScreen(
     }
 
     if (uiState.showTrialModal) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissTrialModal,
-            icon = {
-                Surface(
-                    modifier = Modifier.size(80.dp),
-                    shape = CircleShape,
-                    shadowElevation = 6.dp,
-                    border = BorderStroke(2.dp, YapeCyan)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.mi_logo),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            },
-            title = {
-                Text(
-                    stringResource(R.string.trial_modal_title),
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 22.sp,
-                    color = YapePurple
-                )
-            },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        stringResource(R.string.trial_modal_body_1),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.DarkGray
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        stringResource(R.string.trial_modal_body_2),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = YapePurple,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = viewModel::dismissTrialModal,
-                    colors = ButtonDefaults.buttonColors(containerColor = YapePurple),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(stringResource(R.string.trial_modal_confirm), fontWeight = FontWeight.Bold)
-                }
-            }
+        TrialPromoDialog(
+            onConfirm = viewModel::dismissTrialModal,
+            onDismiss = viewModel::dismissTrialModal
         )
     }
 
     if (uiState.showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissDeleteConfirm,
-            icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red) },
-            title = { Text(stringResource(R.string.delete_dialog_title)) },
-            text = { Text(stringResource(R.string.delete_dialog_body)) },
-            confirmButton = {
-                Button(
-                    onClick = viewModel::confirmDeleteHistory,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text(stringResource(R.string.delete_dialog_confirm), color = Color.White)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissDeleteConfirm) {
-                    Text(stringResource(R.string.delete_dialog_cancel))
-                }
-            }
+        DeleteHistoryDialog(
+            onConfirm = viewModel::confirmDeleteHistory,
+            onDismiss = viewModel::dismissDeleteConfirm
         )
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.dashboard_title),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = YapePurple)
-            )
+            HomeTopBar()
         },
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        bottomBar = {
+            DashboardBottomBar(selectedTab = DashboardTab.Home) { tab ->
+                when (tab) {
+                    DashboardTab.Home -> Unit
+                    DashboardTab.History -> onShowHistory()
+                    DashboardTab.Payments -> onShowPayments()
+                    DashboardTab.Reports -> if (uiState.isPremium) onShowReports() else onShowPremium()
+                    DashboardTab.Profile -> onShowProfile()
+                }
+            }
+        }
     ) { padding ->
+        val showRestrictedSettingsHint = isLikelyRestrictedSettingsBlocked(
+            context = context,
+            hasNotificationPermission = uiState.isPermissionEnabled
+        )
+        val showBatteryWarning = !isBatteryOptimizationOff && !batteryWarningDismissed
+        val hasProAccess = uiState.isPremium || uiState.trialDays > 0
+
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(16.dp)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val showRestrictedSettingsHint = isLikelyRestrictedSettingsBlocked(
-                context = context,
-                hasNotificationPermission = uiState.isPermissionEnabled
+            HomeBalanceHeroCard(
+                total = uiState.dailyTotal,
+                count = uiState.dailyCount,
+                isListeningEnabled = uiState.isPermissionEnabled
             )
 
-            SummaryCard(total = uiState.dailyTotal, count = uiState.dailyCount)
-
-            StatusCard(
-                isEnabled = uiState.isPermissionEnabled,
-                onConfigClick = {
+            HomeListenerStatusCard(
+                isListeningEnabled = uiState.isPermissionEnabled,
+                onClick = {
                     val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
                     context.startActivity(intent)
                 }
             )
 
             if (showRestrictedSettingsHint) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                    border = BorderStroke(1.dp, Color(0xFF43A047))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF2E7D32))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    stringResource(R.string.restricted_settings_title),
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1B5E20)
-                                )
-                                Text(
-                                    text = stringResource(R.string.restricted_settings_body),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF1B5E20)
-                                )
-                                Text(
-                                    text = manufacturerHint(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF1B5E20),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    val intent = Intent(
-                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                        Uri.parse("package:${context.packageName}")
-                                    )
-                                    context.startActivity(intent)
-                                }
-                            ) {
-                                Text(
-                                    stringResource(R.string.restricted_settings_open_app_info),
-                                    color = Color(0xFF1B5E20),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            TextButton(
-                                onClick = {
-                                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                    context.startActivity(intent)
-                                }
-                            ) {
-                                Text(
-                                    stringResource(R.string.restricted_settings_open_notification_access),
-                                    color = Color(0xFF1B5E20),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
+                WarningCard(
+                    title = stringResource(R.string.restricted_settings_title),
+                    body = stringResource(R.string.restricted_settings_body),
+                    actionLabel = stringResource(R.string.restricted_settings_open_app_info),
+                    accentColor = Color(0xFFE1802F),
+                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
+                    onClick = {
+                        val intent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:${context.packageName}")
+                        )
+                        context.startActivity(intent)
                     }
+                )
+            } else if (showBatteryWarning) {
+                WarningCard(
+                    title = stringResource(R.string.battery_optimization_title),
+                    body = stringResource(R.string.battery_warning_body),
+                    actionLabel = stringResource(R.string.battery_warning_open_settings),
+                    accentColor = Color(0xFFE1802F),
+                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                        context.startActivity(intent)
+                    }
+                )
+            }
+
+            DashboardSectionHeader(
+                title = stringResource(R.string.home_quick_actions_title)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    HomeQuickAction(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.home_quick_action_collect),
+                        iconRes = R.drawable.ic_nav_payments,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                        onClick = onShowPayments
+                    )
+                    HomeQuickAction(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.home_quick_action_history),
+                        iconRes = R.drawable.ic_nav_history,
+                        iconTint = Color(0xFF2A79C8),
+                        iconBackground = Color(0xFFEAF4FF),
+                        onClick = onShowHistory
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    HomeQuickAction(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.home_quick_action_reports),
+                        iconRes = R.drawable.ic_nav_reports,
+                        iconTint = AppColors.BrandPrimaryStrong,
+                        iconBackground = AppColors.SurfaceBrand,
+                        onClick = {
+                            if (uiState.isPremium) onShowReports() else onShowPremium()
+                        }
+                    )
+                    HomeQuickAction(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.home_quick_action_voice),
+                        iconRes = R.drawable.ic_voice_pro,
+                        iconTint = AppColors.BrandAccent,
+                        iconBackground = Color(0xFFE8FCF7),
+                        onClick = {
+                            if (uiState.isPremium) onShowVoiceSettings() else onShowPremium()
+                        }
+                    )
                 }
             }
 
-            if (!isBatteryOptimizationOff && !batteryWarningDismissed) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                    border = BorderStroke(1.dp, Color(0xFFFF9800))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF9800))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    stringResource(R.string.battery_warning_title),
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFE65100)
-                                )
-                                Text(
-                                    stringResource(R.string.battery_warning_body),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFFE65100)
-                                )
-                            }
-                        }
+            HomeRecentActivityCard(
+                payments = uiState.recentPayments,
+                onViewAll = onShowRecentHistory
+            )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                    context.startActivity(intent)
-                                }
-                            ) {
-                                Text(
-                                    stringResource(R.string.battery_warning_open_settings),
-                                    color = Color(0xFFE65100),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            TextButton(
-                                onClick = {
-                                    SessionManager.setBatteryWarningDismissed(context, true)
-                                    batteryWarningDismissed = true
-                                }
-                            ) {
-                                Text(
-                                    stringResource(R.string.battery_warning_dismiss),
-                                    color = Color(0xFFE65100),
-                                    fontWeight = FontWeight.SemiBold
-                                )
+            DashboardSectionHeader(
+                title = stringResource(R.string.home_features_title)
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(AppRadii.xl),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = AppElevation.sm
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    HomeFeatureCard(
+                        title = stringResource(R.string.home_feature_listening_title),
+                        body = stringResource(R.string.home_feature_listening_body),
+                        badgeText = if (uiState.isPermissionEnabled) {
+                            stringResource(R.string.home_feature_badge_ready)
+                        } else {
+                            stringResource(R.string.home_feature_badge_pending)
+                        },
+                        iconRes = R.drawable.ic_nav_payments,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                        onClick = {
+                            if (uiState.isPermissionEnabled) {
+                                onShowPayments()
+                            } else {
+                                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                context.startActivity(intent)
                             }
                         }
-                    }
+                    )
+                    HomeSectionDivider()
+
+                    HomeFeatureCard(
+                        title = stringResource(R.string.home_feature_history_title),
+                        body = stringResource(R.string.home_feature_history_body),
+                        badgeText = stringResource(R.string.home_feature_badge_ready),
+                        iconRes = R.drawable.ic_nav_history,
+                        iconTint = Color(0xFF2A79C8),
+                        iconBackground = Color(0xFFEAF4FF),
+                        onClick = onShowHistory
+                    )
+                    HomeSectionDivider()
+
+                    HomeFeatureCard(
+                        title = stringResource(R.string.home_feature_reports_title),
+                        body = stringResource(R.string.home_feature_reports_body),
+                        badgeText = if (hasProAccess) {
+                            stringResource(R.string.home_feature_badge_ready)
+                        } else {
+                            stringResource(R.string.home_feature_badge_pro)
+                        },
+                        iconRes = R.drawable.ic_nav_reports,
+                        iconTint = AppColors.BrandPrimaryStrong,
+                        iconBackground = AppColors.SurfaceBrand,
+                        onClick = {
+                            if (hasProAccess) onShowReports() else onShowPremium()
+                        }
+                    )
+                    HomeSectionDivider()
+
+                    HomeFeatureCard(
+                        title = stringResource(R.string.home_feature_voice_title),
+                        body = stringResource(R.string.home_feature_voice_body),
+                        badgeText = if (hasProAccess) {
+                            stringResource(R.string.home_feature_badge_ready)
+                        } else {
+                            stringResource(R.string.home_feature_badge_pro)
+                        },
+                        iconRes = R.drawable.ic_voice_pro,
+                        iconTint = AppColors.BrandAccent,
+                        iconBackground = Color(0xFFE8FCF7),
+                        onClick = {
+                            if (hasProAccess) onShowVoiceSettings() else onShowPremium()
+                        }
+                    )
+                    HomeSectionDivider()
+
+                    HomeFeatureCard(
+                        title = stringResource(R.string.home_feature_profile_title),
+                        body = stringResource(R.string.home_feature_profile_body),
+                        badgeText = stringResource(R.string.home_feature_badge_account),
+                        iconRes = R.drawable.ic_nav_profile,
+                        iconTint = Color(0xFF576273),
+                        iconBackground = Color(0xFFF2F4F8),
+                        onClick = onShowProfile
+                    )
                 }
             }
+
+            HomeSecondaryActions(
+                onClearToday = viewModel::showDeleteConfirm
+            )
+
             if (!isBatteryOptimizationOff && batteryWarningDismissed) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -365,107 +405,362 @@ fun HomeScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.battery_warning_show_again),
-                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
 
-            Text(
-                text = stringResource(R.string.control_tools_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Spacer(modifier = Modifier.height(6.dp))
+            LicenseFooter()
+        }
+    }
+}
 
-            ToolButton(
-                title = stringResource(R.string.tool_history_title),
-                subtitle = stringResource(R.string.tool_history_subtitle),
-                icon = Icons.Default.DateRange,
-                onClick = onShowHistory
-            )
-
-            ToolButton(
-                title = stringResource(R.string.tool_reports_title),
-                subtitle = stringResource(R.string.tool_reports_subtitle),
-                icon = Icons.Default.Info,
-                onClick = {
-                    if (uiState.isPremium) onShowReports() else onShowPremium()
-                }
-            )
-
-            ToolButton(
-                title = stringResource(R.string.tool_clear_title),
-                subtitle = stringResource(R.string.tool_clear_subtitle),
-                icon = Icons.Default.Settings,
-                onClick = viewModel::showDeleteConfirm
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            if (uiState.trialDays > 0) {
-                Card(
-                    onClick = onShowPremium,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF2FAFF)),
-                    border = BorderStroke(1.dp, YapeCyan.copy(alpha = 0.45f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+@Composable
+private fun DeleteHistoryDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xB81A1830).copy(alpha = 0.56f))
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(30.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F3FA)),
+                elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.xl)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 26.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Surface(
+                        modifier = Modifier.size(52.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.10f)
                     ) {
-                        Surface(
-                            modifier = Modifier.size(34.dp),
-                            shape = CircleShape,
-                            color = YapePurple.copy(alpha = 0.1f)
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.a11y_delete_history),
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = stringResource(R.string.delete_dialog_title),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = stringResource(R.string.delete_dialog_body),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 24.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(26.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = YapePurple,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.premium_trial_title),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = YapePurple
-                            )
-                            Text(
-                                text = stringResource(R.string.premium_days_left, uiState.trialDays),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF22303A)
+                                text = stringResource(R.string.delete_dialog_cancel),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
 
-                        Surface(
+                        Button(
+                            onClick = onConfirm,
+                            modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(999.dp),
-                            color = YapeCyan.copy(alpha = 0.22f)
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD52D2D))
                         ) {
                             Text(
-                                text = stringResource(R.string.premium_badge_label),
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = YapePurple
+                                text = stringResource(R.string.delete_dialog_confirm),
+                                color = MaterialTheme.colorScheme.surface,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
                 }
             }
-
-            LicenseFooter(onPremiumClick = onShowPremium)
         }
     }
 }
+
+@Composable
+private fun TrialPromoDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    val overlayAlpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 260),
+        label = "trial_overlay_alpha"
+    )
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 320),
+        label = "trial_content_alpha"
+    )
+    val contentScale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.92f,
+        animationSpec = tween(durationMillis = 360),
+        label = "trial_content_scale"
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xB81A1830).copy(alpha = 0.72f * overlayAlpha))
+                .padding(horizontal = 32.dp, vertical = 40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp)
+                    .graphicsLayer {
+                        alpha = contentAlpha
+                        scaleX = contentScale
+                        scaleY = contentScale
+                    },
+                shape = RoundedCornerShape(30.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.xl)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFFF8F1FC),
+                                        Color(0xFFFFFFFF)
+                                    )
+                                )
+                            )
+                            .padding(horizontal = 16.dp, vertical = 16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x14A855F7))
+                        )
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x1400D6C2))
+                        )
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.a11y_close_dialog),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clickable(onClick = onDismiss)
+                                )
+                            }
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TrialBrandBadge(
+                                    logoRes = R.drawable.yape,
+                                    contentDescription = "Yape",
+                                    size = 54.dp
+                                )
+                                TrialBrandBadge(
+                                    logoRes = R.drawable.plin,
+                                    contentDescription = "Plin",
+                                    size = 52.dp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.trial_modal_badge),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 11.sp,
+                                    letterSpacing = 0.9.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Text(
+                                text = stringResource(R.string.trial_modal_title_new),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.titleLarge,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 29.sp
+                            )
+
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TrialBenefitItem(
+                        title = stringResource(R.string.trial_modal_benefit_title_1),
+                        subtitle = stringResource(R.string.trial_modal_benefit_subtitle_1)
+                    )
+                    TrialBenefitItem(
+                        title = stringResource(R.string.trial_modal_benefit_title_2),
+                        subtitle = stringResource(R.string.trial_modal_benefit_subtitle_2)
+                    )
+                    TrialBenefitItem(
+                        title = stringResource(R.string.trial_modal_benefit_title_3),
+                        subtitle = stringResource(R.string.trial_modal_benefit_subtitle_3)
+                    )
+
+                    Spacer(modifier = Modifier.height(26.dp))
+
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = AppElevation.md)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.trial_modal_confirm_new),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.surface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = stringResource(R.string.trial_modal_legal),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 17.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrialBrandBadge(
+    logoRes: Int,
+    contentDescription: String,
+    size: androidx.compose.ui.unit.Dp
+) {
+    Image(
+        painter = painterResource(logoRes),
+        contentDescription = contentDescription,
+        modifier = Modifier
+            .size(size)
+    )
+}
+
+@Composable
+private fun TrialBenefitItem(
+    title: String,
+    subtitle: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Surface(
+            modifier = Modifier.padding(top = 2.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(
+                modifier = Modifier.size(22.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = subtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+

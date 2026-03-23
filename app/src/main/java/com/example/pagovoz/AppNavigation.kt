@@ -99,17 +99,65 @@ fun AppNavigation() {
     when (uiState.currentScreen) {
         "premium" -> {
             if (uiState.isPremium) {
-                PremiumStatusScreen(onBack = viewModel::openHome)
+                PremiumStatusScreen(
+                    onBack = viewModel::openHome,
+                    onShowReports = viewModel::openReports,
+                    onShowHistory = viewModel::openHistory,
+                    onShowPayments = viewModel::openPayments,
+                    onShowVoiceSettings = viewModel::openVoiceSettings,
+                    onShowProfile = viewModel::openProfile
+                )
             } else {
                 PremiumInfoScreen(onBack = viewModel::openHome)
             }
         }
-        "history" -> HistoryScreen(onBack = viewModel::openHome)
-        "reports" -> ReportGeneratorScreen(onBack = viewModel::openHome)
+        "voice_settings" -> VoiceSettingsScreen(
+            onBack = viewModel::openHome,
+            onShowHistory = viewModel::openHistory,
+            onShowPayments = viewModel::openPayments,
+            onShowReports = viewModel::openReports,
+            onShowProfile = viewModel::openProfile
+        )
+        "payments" -> PaymentsScreen(
+            onBack = viewModel::openHome,
+            onShowHistory = viewModel::openHistory,
+            onShowReports = viewModel::openReports,
+            onShowPremium = viewModel::openPremium,
+            onShowProfile = viewModel::openProfile
+        )
+        "history" -> HistoryScreen(
+            onBack = viewModel::openHome,
+            onShowPayments = viewModel::openPayments,
+            onShowReports = viewModel::openReports,
+            onShowVoiceSettings = viewModel::openVoiceSettings,
+            onShowPremium = viewModel::openPremium,
+            onShowProfile = viewModel::openProfile,
+            openedFromRecentActivity = uiState.historyOpenedFromRecent
+        )
+        "reports" -> ReportGeneratorScreen(
+            onBack = viewModel::openHome,
+            onShowHistory = viewModel::openHistory,
+            onShowPayments = viewModel::openPayments,
+            onShowVoiceSettings = viewModel::openVoiceSettings,
+            onShowPremium = viewModel::openPremium,
+            onShowProfile = viewModel::openProfile
+        )
+        "profile" -> ProfileScreen(
+            onBack = viewModel::openHome,
+            onShowHistory = viewModel::openHistory,
+            onShowPayments = viewModel::openPayments,
+            onShowReports = viewModel::openReports,
+            onShowPremium = viewModel::openPremium,
+            onShowVoiceSettings = viewModel::openVoiceSettings
+        )
         else -> HomeScreen(
             onShowHistory = viewModel::openHistory,
+            onShowRecentHistory = viewModel::openHistoryFromRecent,
+            onShowPayments = viewModel::openPayments,
             onShowPremium = viewModel::openPremium,
-            onShowReports = viewModel::openReports
+            onShowReports = viewModel::openReports,
+            onShowVoiceSettings = viewModel::openVoiceSettings,
+            onShowProfile = viewModel::openProfile
         )
     }
 }

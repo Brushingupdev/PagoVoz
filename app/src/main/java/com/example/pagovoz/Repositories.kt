@@ -20,6 +20,7 @@ interface SessionRepository {
     fun getYesterdayTotal(): Float
     fun getYesterdayCount(): Int
     fun getYesterdayHistory(): List<PaymentRecord>
+    fun getMultiDayHistory(): List<PaymentRecord>
 }
 
 class DefaultSessionRepository(
@@ -41,6 +42,7 @@ class DefaultSessionRepository(
     override fun getYesterdayTotal(): Float = SessionManager.getYesterdayTotal(context)
     override fun getYesterdayCount(): Int = SessionManager.getYesterdayCount(context)
     override fun getYesterdayHistory(): List<PaymentRecord> = SessionManager.getYesterdayHistory(context)
+    override fun getMultiDayHistory(): List<PaymentRecord> = SessionManager.getMultiDayHistory(context)
 }
 
 interface LicenseRepository {
