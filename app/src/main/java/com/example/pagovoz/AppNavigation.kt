@@ -40,6 +40,7 @@ fun AppNavigation() {
     LaunchedEffect(Unit) {
         viewModel.start()
         updateViewModel.checkForUpdates()
+        SupabaseManager.reportDeviceVersion(context)
     }
 
     DisposableEffect(lifecycleOwner) {

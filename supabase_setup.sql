@@ -25,6 +25,21 @@ CREATE INDEX IF NOT EXISTS idx_licenses_active ON licenses(active);
 CREATE INDEX IF NOT EXISTS idx_licenses_is_premium ON licenses(is_premium);
 
 -- ============================================
+-- TABLA: device_versions (tracking de versiones)
+-- ============================================
+CREATE TABLE IF NOT EXISTS device_versions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    device_id TEXT NOT NULL UNIQUE,
+    version_code INTEGER NOT NULL,
+    version_name TEXT NOT NULL,
+    last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_device_versions_device_id ON device_versions(device_id);
+CREATE INDEX IF NOT EXISTS idx_device_versions_version ON device_versions(version_code);
+
+-- ============================================
 -- TABLA: app_config
 -- ============================================
 CREATE TABLE IF NOT EXISTS app_config (
@@ -57,9 +72,10 @@ ON CONFLICT (code) DO NOTHING;
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================
 
--- Habilitar RLS en ambas tablas
+-- Habilitar RLS en las tablas
 ALTER TABLE licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_versions ENABLE ROW LEVEL SECURITY;
 
 -- PolÃ­ticas para licenses
 DROP POLICY IF EXISTS "Allow public read access for license validation" ON licenses;
@@ -83,8 +99,17 @@ DROP POLICY IF EXISTS "Allow authenticated updates to app config" ON app_config;
 CREATE POLICY "Allow authenticated updates to app config"
 ON app_config FOR UPDATE USING (auth.role() = 'authenticated');
 
+-- Políticas para device_versions (escritura pública para registro de versiones)
+DROP POLICY IF EXISTS "Allow public insert to device_versions" ON device_versions;
+CREATE POLICY "Allow public insert to device_versions"
+ON device_versions FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update to device_versions" ON device_versions;
+CREATE POLICY "Allow public update to device_versions"
+ON device_versions FOR UPDATE USING (true);
+
 -- ============================================
--- FUNCIONES ÃšTILES
+-- FUNCIONES ÚTILES
 -- ============================================
 
 -- FunciÃ³n para validar un cÃ³digo de licencia
@@ -153,6 +178,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Función para registrar versión del dispositivo
+CREATE OR REPLACE FUNCTION upsert_device_version(
+    p_device_id TEXT,
+    p_version_code INTEGER,
+    p_version_name TEXT
+)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO device_versions (device_id, version_code, version_name, last_seen)
+    VALUES (p_device_id, p_version_code, p_version_name, NOW())
+    ON CONFLICT (device_id)
+    DO UPDATE SET
+        version_code = EXCLUDED.version_code,
+        version_name = EXCLUDED.version_name,
+        last_seen = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ============================================
 -- TRIGGERS
 -- ============================================
@@ -181,15 +224,20 @@ EXECUTE FUNCTION update_updated_at_column();
 -- ============================================
 
 -- Verificar que las tablas se crearon
-SELECT 
+SELECT
     'licenses' as table_name,
     COUNT(*) as row_count
 FROM licenses
 UNION ALL
-SELECT 
+SELECT
     'app_config' as table_name,
     COUNT(*) as row_count
-FROM app_config;
+FROM app_config
+UNION ALL
+SELECT
+    'device_versions' as table_name,
+    COUNT(*) as row_count
+FROM device_versions;
 
 -- Verificar polÃ­ticas RLS
 SELECT 
@@ -252,10 +300,21 @@ AND is_premium = true;
 
 -- Consulta para estadÃ­sticas
 CREATE OR REPLACE VIEW license_stats AS
-SELECT 
+SELECT
     COUNT(*) as total_licenses,
     COUNT(CASE WHEN used = true THEN 1 END) as used_licenses,
     COUNT(CASE WHEN is_premium = true THEN 1 END) as premium_licenses,
     COUNT(CASE WHEN gives_trial = true THEN 1 END) as trial_licenses,
     COUNT(CASE WHEN device_id IS NOT NULL THEN 1 END) as activated_devices
 FROM licenses;
+
+-- Consulta para estadÃ­sticas de versiones
+CREATE OR REPLACE VIEW version_stats AS
+SELECT
+    version_name,
+    COUNT(*) as total_devices,
+    COUNT(CASE WHEN last_seen > NOW() - INTERVAL '7 days' THEN 1 END) as active_last_7_days,
+    COUNT(CASE WHEN last_seen > NOW() - INTERVAL '30 days' THEN 1 END) as active_last_30_days
+FROM device_versions
+GROUP BY version_name
+ORDER BY version_name;

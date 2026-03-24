@@ -170,4 +170,22 @@ object SupabaseManager {
             checkPremiumStatus(context)
         }
     }
+
+    suspend fun reportDeviceVersion(context: Context) {
+        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val supabaseClient = client ?: return
+
+        try {
+            supabaseClient.postgrest.rpc(
+                function = "upsert_device_version",
+                parameters = mapOf(
+                    "p_device_id" to androidId,
+                    "p_version_code" to BuildConfig.VERSION_CODE,
+                    "p_version_name" to BuildConfig.VERSION_NAME
+                )
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
