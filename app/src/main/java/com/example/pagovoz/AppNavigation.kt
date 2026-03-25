@@ -1,7 +1,6 @@
 package com.example.pagovoz
 
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -40,13 +39,14 @@ fun AppNavigation() {
     LaunchedEffect(Unit) {
         viewModel.start()
         updateViewModel.checkForUpdates()
-        SupabaseManager.reportDeviceVersion(context)
+        SupabaseManager.reportDeviceVersionInBackground(context)
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 updateViewModel.checkForUpdates()
+                SupabaseManager.reportDeviceVersionInBackground(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

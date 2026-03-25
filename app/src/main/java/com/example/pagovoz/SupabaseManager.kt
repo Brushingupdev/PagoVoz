@@ -18,6 +18,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -65,9 +67,14 @@ object SupabaseManager {
     private const val SUPABASE_KEY = BuildConfig.SUPABASE_KEY
     private const val DEBUG_CHECK_INTERVAL_MS = 30_000L
     private const val RELEASE_CHECK_INTERVAL_MS = 5 * 60 * 1000L
+    private const val APP_PREFS_NAME = "app_prefs"
+    private const val VERSION_REPORT_INTERVAL_MS = 12 * 60 * 60 * 1000L
+    private const val KEY_LAST_VERSION_REPORT_AT = "last_device_version_report_at"
+    private const val KEY_LAST_REPORTED_VERSION_CODE = "last_reported_version_code"
 
     // Scope único vinculado al proceso — evita coroutines huérfanas
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val deviceVersionReportMutex = Mutex()
 
     private val client by lazy {
         runCatching {
@@ -104,7 +111,7 @@ object SupabaseManager {
     }
 
     suspend fun checkPremiumStatus(context: Context, force: Boolean = false): Boolean {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(APP_PREFS_NAME, Context.MODE_PRIVATE)
         val lastCheck = prefs.getLong("last_premium_check", 0L)
         val minInterval = if (BuildConfig.DEBUG) DEBUG_CHECK_INTERVAL_MS else RELEASE_CHECK_INTERVAL_MS
 
@@ -171,21 +178,45 @@ object SupabaseManager {
         }
     }
 
-    suspend fun reportDeviceVersion(context: Context) {
-        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-        val supabaseClient = client ?: return
+    fun reportDeviceVersionInBackground(context: Context, force: Boolean = false) {
+        applicationScope.launch {
+            reportDeviceVersion(context, force)
+        }
+    }
 
-        try {
-            supabaseClient.postgrest.rpc(
-                function = "upsert_device_version",
-                parameters = mapOf(
-                    "p_device_id" to androidId,
-                    "p_version_code" to BuildConfig.VERSION_CODE,
-                    "p_version_name" to BuildConfig.VERSION_NAME
+    suspend fun reportDeviceVersion(context: Context, force: Boolean = false) {
+        deviceVersionReportMutex.withLock {
+            val prefs = context.getSharedPreferences(APP_PREFS_NAME, Context.MODE_PRIVATE)
+            val now = System.currentTimeMillis()
+            val lastReportedAt = prefs.getLong(KEY_LAST_VERSION_REPORT_AT, 0L)
+            val lastReportedVersionCode = prefs.getInt(KEY_LAST_REPORTED_VERSION_CODE, -1)
+            val shouldReport = force ||
+                lastReportedVersionCode != BuildConfig.VERSION_CODE ||
+                now - lastReportedAt >= VERSION_REPORT_INTERVAL_MS
+
+            if (!shouldReport) return@withLock
+
+            val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+            if (androidId.isNullOrBlank()) return@withLock
+
+            val supabaseClient = client ?: return@withLock
+
+            try {
+                supabaseClient.postgrest.rpc(
+                    function = "upsert_device_version",
+                    parameters = mapOf(
+                        "p_device_id" to androidId,
+                        "p_version_code" to BuildConfig.VERSION_CODE,
+                        "p_version_name" to BuildConfig.VERSION_NAME
+                    )
                 )
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
+                prefs.edit()
+                    .putLong(KEY_LAST_VERSION_REPORT_AT, now)
+                    .putInt(KEY_LAST_REPORTED_VERSION_CODE, BuildConfig.VERSION_CODE)
+                    .apply()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿-- Script de configuraciÃ³n de Supabase para PagoVoz
 -- Ejecutar en el SQL Editor de Supabase
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================
 -- TABLA: licenses
 -- ============================================
@@ -36,8 +38,40 @@ CREATE TABLE IF NOT EXISTS device_versions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE device_versions
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+ALTER TABLE device_versions
+ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+UPDATE device_versions
+SET device_id = encode(extensions.digest(device_id, 'sha256'), 'hex')
+WHERE device_id IS NOT NULL
+  AND length(device_id) <> 64;
+
 CREATE INDEX IF NOT EXISTS idx_device_versions_device_id ON device_versions(device_id);
 CREATE INDEX IF NOT EXISTS idx_device_versions_version ON device_versions(version_code);
+
+-- ============================================
+-- TABLA: device_version_history (historial de adopciÃ³n)
+-- ============================================
+CREATE TABLE IF NOT EXISTS device_version_history (
+    device_id TEXT NOT NULL,
+    version_code INTEGER NOT NULL,
+    version_name TEXT NOT NULL,
+    first_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    report_count INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (device_id, version_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_device_version_history_version ON device_version_history(version_code);
+CREATE INDEX IF NOT EXISTS idx_device_version_history_last_seen ON device_version_history(last_seen);
+
+UPDATE device_version_history
+SET device_id = encode(extensions.digest(device_id, 'sha256'), 'hex')
+WHERE device_id IS NOT NULL
+  AND length(device_id) <> 64;
 
 -- ============================================
 -- TABLA: app_config
@@ -76,6 +110,7 @@ ON CONFLICT (code) DO NOTHING;
 ALTER TABLE licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE device_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_version_history ENABLE ROW LEVEL SECURITY;
 
 -- PolÃ­ticas para licenses
 DROP POLICY IF EXISTS "Allow public read access for license validation" ON licenses;
@@ -99,14 +134,14 @@ DROP POLICY IF EXISTS "Allow authenticated updates to app config" ON app_config;
 CREATE POLICY "Allow authenticated updates to app config"
 ON app_config FOR UPDATE USING (auth.role() = 'authenticated');
 
--- Políticas para device_versions (escritura pública para registro de versiones)
+-- Políticas para device_versions (sin escritura directa desde el cliente)
 DROP POLICY IF EXISTS "Allow public insert to device_versions" ON device_versions;
-CREATE POLICY "Allow public insert to device_versions"
-ON device_versions FOR INSERT WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Allow public update to device_versions" ON device_versions;
-CREATE POLICY "Allow public update to device_versions"
-ON device_versions FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Allow public insert to device_version_history" ON device_version_history;
+DROP POLICY IF EXISTS "Allow public update to device_version_history" ON device_version_history;
+
+REVOKE ALL ON device_versions FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON device_version_history FROM PUBLIC, anon, authenticated;
 
 -- ============================================
 -- FUNCIONES ÚTILES
@@ -130,10 +165,11 @@ BEGIN
         l.is_premium,
         l.premium_until,
         l.gives_trial
-    FROM licenses l
-    WHERE l.code = p_code;
+    FROM public.licenses l
+    WHERE l.code = p_code
+    LIMIT 1;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- FunciÃ³n para activar una licencia
 CREATE OR REPLACE FUNCTION activate_license(
@@ -147,7 +183,7 @@ DECLARE
 BEGIN
     -- Verificar si la licencia existe y estÃ¡ activa
     SELECT EXISTS (
-        SELECT 1 FROM licenses 
+        SELECT 1 FROM public.licenses 
         WHERE code = p_code 
         AND active = true
         AND (used = false OR device_id = p_device_id)
@@ -159,10 +195,10 @@ BEGIN
     
     -- Obtener si da trial
     SELECT gives_trial INTO v_gives_trial 
-    FROM licenses WHERE code = p_code;
+    FROM public.licenses WHERE code = p_code;
     
     -- Actualizar la licencia
-    UPDATE licenses 
+    UPDATE public.licenses 
     SET 
         used = true,
         device_id = p_device_id,
@@ -176,7 +212,27 @@ BEGIN
     
     RETURN true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- FunciÃ³n para consultar el estado premium del dispositivo
+CREATE OR REPLACE FUNCTION get_premium_status(
+    p_device_id TEXT
+)
+RETURNS TABLE (
+    is_premium BOOLEAN,
+    premium_until TIMESTAMP WITH TIME ZONE
+) AS $$
+    SELECT
+        CASE
+            WHEN l.is_premium IS TRUE AND (l.premium_until IS NULL OR l.premium_until > NOW()) THEN true
+            ELSE false
+        END AS is_premium,
+        l.premium_until
+    FROM public.licenses l
+    WHERE l.device_id = p_device_id
+      AND l.active = true
+    LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
 
 -- Función para registrar versión del dispositivo
 CREATE OR REPLACE FUNCTION upsert_device_version(
@@ -185,16 +241,62 @@ CREATE OR REPLACE FUNCTION upsert_device_version(
     p_version_name TEXT
 )
 RETURNS VOID AS $$
+DECLARE
+    v_device_id TEXT;
+    v_version_name TEXT;
 BEGIN
+    IF p_device_id IS NULL OR btrim(p_device_id) = '' THEN
+        RETURN;
+    END IF;
+
+    IF p_version_code IS NULL OR p_version_code <= 0 THEN
+        RETURN;
+    END IF;
+
+    v_device_id := encode(extensions.digest(btrim(p_device_id), 'sha256'), 'hex');
+    v_version_name := LEFT(COALESCE(NULLIF(btrim(p_version_name), ''), 'unknown'), 64);
+
     INSERT INTO device_versions (device_id, version_code, version_name, last_seen)
-    VALUES (p_device_id, p_version_code, p_version_name, NOW())
+    VALUES (v_device_id, p_version_code, v_version_name, NOW())
     ON CONFLICT (device_id)
     DO UPDATE SET
         version_code = EXCLUDED.version_code,
         version_name = EXCLUDED.version_name,
         last_seen = NOW();
+
+    INSERT INTO device_version_history (
+        device_id,
+        version_code,
+        version_name,
+        first_seen,
+        last_seen,
+        report_count
+    )
+    VALUES (
+        v_device_id,
+        p_version_code,
+        v_version_name,
+        NOW(),
+        NOW(),
+        1
+    )
+    ON CONFLICT (device_id, version_code)
+    DO UPDATE SET
+        version_name = EXCLUDED.version_name,
+        last_seen = NOW(),
+        report_count = device_version_history.report_count + 1;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE ALL ON FUNCTION validate_license(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION activate_license(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_premium_status(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION upsert_device_version(TEXT, INTEGER, TEXT) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION validate_license(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION activate_license(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION get_premium_status(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION upsert_device_version(TEXT, INTEGER, TEXT) TO anon, authenticated, service_role;
 
 -- ============================================
 -- TRIGGERS
@@ -237,7 +339,12 @@ UNION ALL
 SELECT
     'device_versions' as table_name,
     COUNT(*) as row_count
-FROM device_versions;
+FROM device_versions
+UNION ALL
+SELECT
+    'device_version_history' as table_name,
+    COUNT(*) as row_count
+FROM device_version_history;
 
 -- Verificar polÃ­ticas RLS
 SELECT 
@@ -309,12 +416,24 @@ SELECT
 FROM licenses;
 
 -- Consulta para estadÃ­sticas de versiones
-CREATE OR REPLACE VIEW version_stats AS
+CREATE OR REPLACE VIEW version_stats WITH (security_invoker = true) AS
 SELECT
     version_name,
     COUNT(*) as total_devices,
     COUNT(CASE WHEN last_seen > NOW() - INTERVAL '7 days' THEN 1 END) as active_last_7_days,
     COUNT(CASE WHEN last_seen > NOW() - INTERVAL '30 days' THEN 1 END) as active_last_30_days
 FROM device_versions
+GROUP BY version_name
+ORDER BY version_name;
+
+-- Consulta para adopciÃ³n histÃ³rica por versiÃ³n
+CREATE OR REPLACE VIEW version_adoption_stats WITH (security_invoker = true) AS
+SELECT
+    version_name,
+    COUNT(*) as devices_seen,
+    MIN(first_seen) as first_adoption_at,
+    MAX(last_seen) as last_adoption_at,
+    SUM(report_count) as total_reports
+FROM device_version_history
 GROUP BY version_name
 ORDER BY version_name;
