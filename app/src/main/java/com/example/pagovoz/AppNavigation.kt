@@ -1,6 +1,5 @@
 package com.example.pagovoz
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -10,7 +9,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -60,37 +58,55 @@ fun AppNavigation() {
     if (updateUiState.showForced) {
         AlertDialog(
             onDismissRequest = {},
-            title = { Text(text = "Actualización obligatoria") },
-            text = { Text(text = "Hay una versión nueva (${updateUiState.latestVersionName}). Debes actualizar para continuar.") },
+            title = { Text(text = "Actualizacion obligatoria") },
+            text = {
+                Text(
+                    text = buildUpdateDialogMessage(
+                        versionName = updateUiState.latestVersionName,
+                        isForced = true,
+                        statusMessage = updateUiState.statusMessage
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, updateUiState.downloadUrl.toUri())
-                        context.startActivity(intent)
-                    }
+                    onClick = updateViewModel::startUpdate,
+                    enabled = !updateUiState.isDownloading
                 ) {
-                    Text("Actualizar")
+                    Text(updateActionLabel(updateUiState))
                 }
             }
         )
     } else if (updateUiState.showOptional) {
         AlertDialog(
-            onDismissRequest = { updateViewModel.dismissOptional() },
-            title = { Text(text = "Actualización disponible") },
-            text = { Text(text = "Hay una versión nueva (${updateUiState.latestVersionName}). ¿Deseas actualizar ahora?") },
+            onDismissRequest = {
+                if (!updateUiState.isDownloading) {
+                    updateViewModel.dismissOptional()
+                }
+            },
+            title = { Text(text = "Actualizacion disponible") },
+            text = {
+                Text(
+                    text = buildUpdateDialogMessage(
+                        versionName = updateUiState.latestVersionName,
+                        isForced = false,
+                        statusMessage = updateUiState.statusMessage
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, updateUiState.downloadUrl.toUri())
-                        context.startActivity(intent)
-                        updateViewModel.dismissOptional()
-                    }
+                    onClick = updateViewModel::startUpdate,
+                    enabled = !updateUiState.isDownloading
                 ) {
-                    Text("Actualizar")
+                    Text(updateActionLabel(updateUiState))
                 }
             },
             dismissButton = {
-                TextButton(onClick = updateViewModel::dismissOptional) {
+                TextButton(
+                    onClick = updateViewModel::dismissOptional,
+                    enabled = !updateUiState.isDownloading
+                ) {
                     Text("Luego")
                 }
             }
@@ -112,6 +128,7 @@ fun AppNavigation() {
                 PremiumInfoScreen(onBack = viewModel::openHome)
             }
         }
+
         "voice_settings" -> VoiceSettingsScreen(
             onBack = viewModel::openHome,
             onShowHistory = viewModel::openHistory,
@@ -119,6 +136,7 @@ fun AppNavigation() {
             onShowReports = viewModel::openReports,
             onShowProfile = viewModel::openProfile
         )
+
         "payments" -> PaymentsScreen(
             onBack = viewModel::openHome,
             onShowHistory = viewModel::openHistory,
@@ -126,6 +144,7 @@ fun AppNavigation() {
             onShowPremium = viewModel::openPremium,
             onShowProfile = viewModel::openProfile
         )
+
         "history" -> HistoryScreen(
             onBack = viewModel::openHome,
             onShowPayments = viewModel::openPayments,
@@ -135,6 +154,7 @@ fun AppNavigation() {
             onShowProfile = viewModel::openProfile,
             openedFromRecentActivity = uiState.historyOpenedFromRecent
         )
+
         "reports" -> ReportGeneratorScreen(
             onBack = viewModel::openHome,
             onShowHistory = viewModel::openHistory,
@@ -143,6 +163,7 @@ fun AppNavigation() {
             onShowPremium = viewModel::openPremium,
             onShowProfile = viewModel::openProfile
         )
+
         "profile" -> ProfileScreen(
             onBack = viewModel::openHome,
             onShowHistory = viewModel::openHistory,
@@ -151,6 +172,7 @@ fun AppNavigation() {
             onShowPremium = viewModel::openPremium,
             onShowVoiceSettings = viewModel::openVoiceSettings
         )
+
         else -> HomeScreen(
             onShowHistory = viewModel::openHistory,
             onShowRecentHistory = viewModel::openHistoryFromRecent,
@@ -161,4 +183,23 @@ fun AppNavigation() {
             onShowProfile = viewModel::openProfile
         )
     }
+}
+
+private fun buildUpdateDialogMessage(
+    versionName: String,
+    isForced: Boolean,
+    statusMessage: String?
+): String {
+    val baseMessage = if (isForced) {
+        "Hay una version nueva ($versionName). Debes actualizar para continuar."
+    } else {
+        "Hay una version nueva ($versionName). Quieres actualizar ahora?"
+    }
+
+    return statusMessage?.takeIf { it.isNotBlank() }?.let { "$baseMessage\n\n$it" } ?: baseMessage
+}
+
+private fun updateActionLabel(uiState: UpdateUiState): String {
+    if (!uiState.isDownloading) return "Actualizar"
+    return uiState.downloadProgress?.let { "Descargando $it%" } ?: "Descargando..."
 }

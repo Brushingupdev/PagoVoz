@@ -12,7 +12,10 @@ data class UpdateUiState(
     val showOptional: Boolean = false,
     val showForced: Boolean = false,
     val latestVersionName: String = "",
-    val downloadUrl: String = ""
+    val downloadUrl: String = "",
+    val isDownloading: Boolean = false,
+    val downloadProgress: Int? = null,
+    val statusMessage: String? = null
 )
 
 class UpdateViewModel(
@@ -48,7 +51,8 @@ class UpdateViewModel(
                     showForced = showForced,
                     showOptional = showOptional,
                     latestVersionName = remote.latest_version_name,
-                    downloadUrl = remote.download_url
+                    downloadUrl = remote.download_url,
+                    statusMessage = null
                 )
             }
 
@@ -72,13 +76,100 @@ class UpdateViewModel(
                 showForced = true,
                 showOptional = false,
                 latestVersionName = prefs.getString(KEY_CACHED_VERSION_NAME, "") ?: "",
-                downloadUrl = prefs.getString(KEY_CACHED_DOWNLOAD_URL, "") ?: ""
+                downloadUrl = prefs.getString(KEY_CACHED_DOWNLOAD_URL, "") ?: "",
+                statusMessage = null
             )
         }
     }
 
+    fun startUpdate() {
+        val currentState = _uiState.value
+        if (currentState.isDownloading || currentState.downloadUrl.isBlank()) return
+
+        if (!AppUpdateInstaller.canRequestPackageInstalls(appContext)) {
+            _uiState.update {
+                it.copy(
+                    statusMessage = "Activa 'Instalar apps desconocidas' y vuelve a tocar Actualizar."
+                )
+            }
+            AppUpdateInstaller.openInstallPermissionSettings(appContext)
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isDownloading = true,
+                    downloadProgress = 0,
+                    statusMessage = "Preparando descarga..."
+                )
+            }
+
+            val pendingUpdate = AppUpdateInstaller.enqueueDownload(
+                context = appContext,
+                downloadUrl = currentState.downloadUrl,
+                versionName = currentState.latestVersionName
+            )
+
+            if (pendingUpdate == null) {
+                _uiState.update {
+                    it.copy(
+                        isDownloading = false,
+                        downloadProgress = null,
+                        statusMessage = "No se pudo iniciar la descarga."
+                    )
+                }
+                return@launch
+            }
+
+            when (
+                val result = AppUpdateInstaller.awaitDownload(appContext, pendingUpdate) { progress ->
+                    _uiState.update {
+                        it.copy(
+                            downloadProgress = progress,
+                            statusMessage = progress?.let { percent ->
+                                "Descargando actualizacion... $percent%"
+                            } ?: "Descargando actualizacion..."
+                        )
+                    }
+                }
+            ) {
+                is AppUpdateDownloadResult.Success -> {
+                    val installerOpened = AppUpdateInstaller.launchInstaller(appContext, result.apkFile)
+                    _uiState.update {
+                        it.copy(
+                            isDownloading = false,
+                            downloadProgress = if (installerOpened) 100 else null,
+                            statusMessage = if (installerOpened) {
+                                "Instalador listo. Confirma la actualizacion para completar el proceso."
+                            } else {
+                                "Se descargo el APK, pero no se pudo abrir el instalador."
+                            }
+                        )
+                    }
+                }
+
+                is AppUpdateDownloadResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            isDownloading = false,
+                            downloadProgress = null,
+                            statusMessage = result.reason
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun dismissOptional() {
-        _uiState.update { it.copy(showOptional = false) }
+        if (_uiState.value.isDownloading) return
+        _uiState.update {
+            it.copy(
+                showOptional = false,
+                statusMessage = null
+            )
+        }
     }
 
     companion object {
