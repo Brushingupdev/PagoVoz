@@ -7,21 +7,14 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
-import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.postgresChangeFlow
-import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class License(
@@ -89,24 +82,8 @@ object SupabaseManager {
     }
 
     fun listenForPremiumChanges(context: Context) {
-        val supabaseClient = client ?: return
-        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-        val channel = supabaseClient.realtime.channel("license-updates")
-
-        channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
-            table = "licenses"
-        }.onEach { change ->
-            // Extraer el device_id del registro actualizado
-            val recordDeviceId = change.record["device_id"]?.jsonPrimitive?.content
-            if (recordDeviceId == androidId) {
-                // Si el cambio es para este equipo, forzamos refresco
-                checkPremiumStatus(context, force = true)
-            }
-        }.launchIn(applicationScope)
-
         applicationScope.launch {
-            supabaseClient.realtime.connect()
-            channel.subscribe()
+            checkPremiumStatus(context, force = true)
         }
     }
 
@@ -166,7 +143,14 @@ object SupabaseManager {
     suspend fun checkAppUpdate(): AppConfig? {
         val supabaseClient = client ?: return null
         return try {
-            supabaseClient.from("app_config").select().decodeSingleOrNull<AppConfig>()
+            supabaseClient.from("app_config")
+                .select()
+                .decodeList<AppConfig>()
+                .maxWithOrNull(
+                    compareBy<AppConfig> { it.latest_version_code }
+                        .thenByDescending { it.force_update }
+                        .thenBy { it.latest_version_name }
+                )
         } catch (e: Exception) {
             null
         }

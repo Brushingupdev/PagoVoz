@@ -27,7 +27,7 @@ class UpdateViewModel(
     val uiState = _uiState.asStateFlow()
 
     private val prefs = appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    private val checkIntervalMs = if (BuildConfig.DEBUG) 5 * 60 * 1000L else 12 * 60 * 60 * 1000L
+    private val checkIntervalMs = if (BuildConfig.DEBUG) 5 * 60 * 1000L else 30 * 60 * 1000L
     private val forcedCacheTtlMs = 24 * 60 * 60 * 1000L
 
     fun checkForUpdates() {

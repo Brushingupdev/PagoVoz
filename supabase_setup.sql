@@ -78,6 +78,7 @@ WHERE device_id IS NOT NULL
 -- ============================================
 CREATE TABLE IF NOT EXISTS app_config (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    singleton BOOLEAN NOT NULL DEFAULT true,
     latest_version_code INTEGER NOT NULL,
     latest_version_name TEXT NOT NULL,
     download_url TEXT NOT NULL,
@@ -86,14 +87,36 @@ CREATE TABLE IF NOT EXISTS app_config (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE app_config
+ADD COLUMN IF NOT EXISTS singleton BOOLEAN NOT NULL DEFAULT true;
+
+UPDATE app_config
+SET singleton = true
+WHERE singleton IS DISTINCT FROM true;
+
+WITH ranked_app_config AS (
+    SELECT
+        id,
+        ROW_NUMBER() OVER (
+            ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST, id DESC
+        ) AS rn
+    FROM app_config
+)
+DELETE FROM app_config ac
+USING ranked_app_config rac
+WHERE ac.id = rac.id
+  AND rac.rn > 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_app_config_singleton ON app_config(singleton);
+
 -- ============================================
 -- DATOS INICIALES
 -- ============================================
 
 -- Insertar configuraciÃ³n de la app
-INSERT INTO app_config (latest_version_code, latest_version_name, download_url, force_update)
-VALUES (1, '1.0', 'https://example.com/download', false)
-ON CONFLICT DO NOTHING;
+INSERT INTO app_config (singleton, latest_version_code, latest_version_name, download_url, force_update)
+VALUES (true, 1, '1.0', 'https://example.com/download', false)
+ON CONFLICT (singleton) DO NOTHING;
 
 -- Insertar cÃ³digos de prueba (cambiar antes de producciÃ³n)
 INSERT INTO licenses (code, gives_trial, is_premium, premium_until) VALUES
@@ -114,16 +137,8 @@ ALTER TABLE device_version_history ENABLE ROW LEVEL SECURITY;
 
 -- PolÃ­ticas para licenses
 DROP POLICY IF EXISTS "Allow public read access for license validation" ON licenses;
-CREATE POLICY "Allow public read access for license validation"
-ON licenses FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Allow authenticated updates" ON licenses;
-CREATE POLICY "Allow authenticated updates"
-ON licenses FOR UPDATE USING (auth.role() = 'authenticated');
-
 DROP POLICY IF EXISTS "Allow authenticated inserts" ON licenses;
-CREATE POLICY "Allow authenticated inserts"
-ON licenses FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 -- PolÃ­ticas para app_config (solo lectura pÃºblica)
 DROP POLICY IF EXISTS "Allow public read access to app config" ON app_config;
@@ -131,8 +146,6 @@ CREATE POLICY "Allow public read access to app config"
 ON app_config FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow authenticated updates to app config" ON app_config;
-CREATE POLICY "Allow authenticated updates to app config"
-ON app_config FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- Políticas para device_versions (sin escritura directa desde el cliente)
 DROP POLICY IF EXISTS "Allow public insert to device_versions" ON device_versions;
@@ -142,6 +155,14 @@ DROP POLICY IF EXISTS "Allow public update to device_version_history" ON device_
 
 REVOKE ALL ON device_versions FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON device_version_history FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON licenses FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON app_config FROM PUBLIC, authenticated;
+
+GRANT SELECT ON app_config TO anon, authenticated;
+GRANT ALL ON licenses TO service_role;
+GRANT ALL ON app_config TO service_role;
+GRANT ALL ON device_versions TO service_role;
+GRANT ALL ON device_version_history TO service_role;
 
 -- ============================================
 -- FUNCIONES ÚTILES
@@ -178,38 +199,41 @@ CREATE OR REPLACE FUNCTION activate_license(
 )
 RETURNS BOOLEAN AS $$
 DECLARE
-    v_license_exists BOOLEAN;
+    v_license licenses%ROWTYPE;
     v_gives_trial BOOLEAN;
 BEGIN
-    -- Verificar si la licencia existe y estÃ¡ activa
-    SELECT EXISTS (
-        SELECT 1 FROM public.licenses 
-        WHERE code = p_code 
-        AND active = true
-        AND (used = false OR device_id = p_device_id)
-    ) INTO v_license_exists;
-    
-    IF NOT v_license_exists THEN
+    SELECT *
+    INTO v_license
+    FROM public.licenses
+    WHERE code = p_code
+    FOR UPDATE;
+
+    IF NOT FOUND OR v_license.active IS NOT TRUE THEN
         RETURN false;
     END IF;
-    
-    -- Obtener si da trial
-    SELECT gives_trial INTO v_gives_trial 
-    FROM public.licenses WHERE code = p_code;
-    
-    -- Actualizar la licencia
-    UPDATE public.licenses 
-    SET 
+
+    IF v_license.used IS TRUE AND v_license.device_id IS DISTINCT FROM p_device_id THEN
+        RETURN false;
+    END IF;
+
+    IF v_license.used IS TRUE AND v_license.device_id = p_device_id THEN
+        RETURN true;
+    END IF;
+
+    v_gives_trial := COALESCE(v_license.gives_trial, false);
+
+    UPDATE public.licenses
+    SET
         used = true,
         device_id = p_device_id,
         is_premium = CASE WHEN v_gives_trial THEN true ELSE is_premium END,
-        premium_until = CASE 
+        premium_until = CASE
             WHEN v_gives_trial THEN NOW() + INTERVAL '7 days'
-            ELSE premium_until 
+            ELSE premium_until
         END,
         updated_at = NOW()
     WHERE code = p_code;
-    
+
     RETURN true;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -231,6 +255,15 @@ RETURNS TABLE (
     FROM public.licenses l
     WHERE l.device_id = p_device_id
       AND l.active = true
+    ORDER BY
+        CASE
+            WHEN l.is_premium IS TRUE AND (l.premium_until IS NULL OR l.premium_until > NOW()) THEN 0
+            WHEN l.is_premium IS TRUE THEN 1
+            ELSE 2
+        END,
+        l.premium_until DESC NULLS LAST,
+        l.updated_at DESC NULLS LAST,
+        l.created_at DESC NULLS LAST
     LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
 
