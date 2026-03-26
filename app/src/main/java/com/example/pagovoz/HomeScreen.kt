@@ -80,9 +80,7 @@ fun isBatteryOptimizationDisabled(context: Context): Boolean {
 }
 
 fun isNotificationServiceEnabled(context: Context): Boolean {
-    val pkgName = context.packageName
-    val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
-    return flat != null && flat.contains(pkgName)
+    return NotificationListenerHelper.isNotificationServiceEnabled(context)
 }
 
 fun isLikelyRestrictedSettingsBlocked(context: Context, hasNotificationPermission: Boolean): Boolean {

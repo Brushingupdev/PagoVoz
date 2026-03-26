@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NotificationListenerHelper.requestRebind(this, forceToggle = false)
         enableEdgeToEdge()
 
         setContent {
@@ -83,6 +84,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        NotificationListenerHelper.requestRebind(this, forceToggle = false)
     }
 
     private fun openNotificationAccessSettings() {

@@ -30,7 +30,20 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     override fun onCreate() {
         super.onCreate()
         logDebug("Servicio creado")
-        tts = TextToSpeech(this, this)
+        ensureTtsInitialized()
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        logDebug("Notification listener conectado")
+        ensureTtsInitialized()
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        logDebug("Notification listener desconectado; solicitando rebind")
+        ttsReady = false
+        NotificationListenerHelper.requestRebind(this)
     }
 
     override fun onInit(status: Int) {
@@ -151,6 +164,11 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             tts.shutdown()
         }
         super.onDestroy()
+    }
+
+    private fun ensureTtsInitialized() {
+        if (::tts.isInitialized) return
+        tts = TextToSpeech(applicationContext, this)
     }
 
     private fun applySpeechSettings() {

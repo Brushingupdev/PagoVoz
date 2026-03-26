@@ -1,0 +1,51 @@
+package com.example.pagovoz
+
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import android.service.notification.NotificationListenerService
+
+object NotificationListenerHelper {
+
+    fun isNotificationServiceEnabled(context: Context): Boolean {
+        val enabledListeners = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners"
+        ).orEmpty()
+        if (enabledListeners.isBlank()) return false
+
+        val targetComponent = ComponentName(context, PagoNotificationListener::class.java)
+        return enabledListeners
+            .split(':')
+            .mapNotNull(ComponentName::unflattenFromString)
+            .any { it == targetComponent }
+    }
+
+    fun requestRebind(context: Context, forceToggle: Boolean = false) {
+        if (!isNotificationServiceEnabled(context)) return
+
+        val component = ComponentName(context, PagoNotificationListener::class.java)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            runCatching {
+                NotificationListenerService.requestRebind(component)
+            }
+        }
+
+        if (!forceToggle) return
+
+        val packageManager = context.packageManager
+        packageManager.setComponentEnabledSetting(
+            component,
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        packageManager.setComponentEnabledSetting(
+            component,
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        )
+    }
+}
