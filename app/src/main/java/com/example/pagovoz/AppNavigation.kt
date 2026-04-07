@@ -134,7 +134,7 @@ fun AppNavigation() {
             onShowHistory = viewModel::openHistory,
             onShowPayments = viewModel::openPayments,
             onShowReports = viewModel::openReports,
-            onShowProfile = viewModel::openProfile
+            onShowPremium = viewModel::openPremium
         )
 
         "payments" -> PaymentsScreen(

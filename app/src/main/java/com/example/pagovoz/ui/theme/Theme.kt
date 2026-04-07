@@ -1,21 +1,21 @@
 package com.example.pagovoz.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val FixedColorScheme = lightColorScheme(
+private val FixedColorScheme = darkColorScheme(
     primary = AppColors.BrandPrimary,
-    onPrimary = AppColors.Surface,
+    onPrimary = ColorSchemeValues.OnBrand,
     primaryContainer = AppColors.SurfaceBrand,
-    onPrimaryContainer = AppColors.BrandPrimary,
+    onPrimaryContainer = AppColors.BrandAccent,
     secondary = AppColors.BrandAccent,
     onSecondary = AppColors.TextPrimary,
     secondaryContainer = AppColors.WarningContainer,
     onSecondaryContainer = AppColors.Warning,
     tertiary = AppColors.Success,
-    onTertiary = AppColors.Surface,
+    onTertiary = ColorSchemeValues.OnBrand,
     tertiaryContainer = AppColors.SuccessContainer,
     onTertiaryContainer = AppColors.Success,
     background = AppColors.Background,
@@ -31,6 +31,10 @@ private val FixedColorScheme = lightColorScheme(
     errorContainer = AppColors.ErrorContainer,
     onErrorContainer = AppColors.Error
 )
+
+private object ColorSchemeValues {
+    val OnBrand = AppColors.Background
+}
 
 @Composable
 fun HablaPagoTheme(

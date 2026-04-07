@@ -4,27 +4,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 object AppColors {
-    val BrandPrimary = Color(0xFF742D8A)
-    val BrandPrimaryStrong = Color(0xFF8C39A6)
-    val BrandAccent = Color(0xFF00D7BB)
+    val YapePurple = Color(0xFF742D8A)
+    val YapePurpleStrong = Color(0xFF5E2371)
+    val PlinCyan = Color(0xFF34B7D7)
 
-    val Background = Color(0xFFF7F7F8)
-    val BackgroundAccent = Color(0xFFEFF0F2)
-    val Surface = Color.White
-    val SurfaceMuted = Color(0xFFF9F9FA)
-    val SurfaceBrand = Color(0xFFF4EEF8)
+    val BrandPrimary = Color(0xFF2FE66C)
+    val BrandPrimaryStrong = Color(0xFF1DB954)
+    val BrandAccent = Color(0xFF78F5B0)
 
-    val TextPrimary = Color(0xFF201C26)
-    val TextSecondary = Color(0xFF66606D)
-    val TextTertiary = Color(0xFF8F8897)
-    val Border = Color(0xFFE5E1E8)
+    val Background = Color(0xFF060807)
+    val BackgroundAccent = Color(0xFF0E1210)
+    val Surface = Color(0xFF121615)
+    val SurfaceMuted = Color(0xFF1A1F1D)
+    val SurfaceBrand = Color(0xFF173022)
 
-    val Success = Color(0xFF1FA866)
-    val SuccessContainer = Color(0xFFEAF8F0)
-    val Warning = Color(0xFFE1802F)
-    val WarningContainer = Color(0xFFFFF3E8)
-    val Error = Color(0xFFC62828)
-    val ErrorContainer = Color(0xFFFFEBEE)
+    val TextPrimary = Color(0xFFF6FAF7)
+    val TextSecondary = Color(0xFFB7C2BC)
+    val TextTertiary = Color(0xFF839088)
+    val Border = Color(0xFF28302C)
+
+    val Success = Color(0xFF30D46C)
+    val SuccessContainer = Color(0xFF14281C)
+    val Warning = Color(0xFFF5B74B)
+    val WarningContainer = Color(0xFF302411)
+    val Error = Color(0xFFFF6B6B)
+    val ErrorContainer = Color(0xFF31191B)
 
     val WhiteAlpha10 = Color.White.copy(alpha = 0.10f)
     val WhiteAlpha14 = Color.White.copy(alpha = 0.14f)
