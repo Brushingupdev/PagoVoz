@@ -9,20 +9,48 @@ object PaymentNotificationParser {
     const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
     const val PLIN_PACKAGE = "pe.interbank.plin"
     private val supportedPackages = setOf(YAPE_PACKAGE, PLIN_PACKAGE)
-    private val relevantHints = listOf(
-        "yape",
-        "plin",
-        "plineo",
-        "plineó",
-        "confirmacion de pago",
-        "confirmación de pago",
-        "recibiste",
-        "has recibido",
-        "te llego",
-        "te llegó",
-        "te envio",
-        "te envió",
-        "ha enviado"
+
+    /**
+     * Keywords that confirm this is a real received payment, not a promo.
+     * Used for notifications from supported packages (Yape/Plin) too,
+     * to ensure we only capture real incoming-payment notifications.
+     */
+    private val paymentSignals = listOf(
+        "te envio", "te envió", "te envi\u00F3",
+        "ha enviado",
+        "te mando", "te mandó", "te mand\u00F3",
+        "te yapeó", "te yapeo", "te yape\u00F3",
+        "te plineó", "te plineo", "te pline\u00F3",
+        "te transfirió", "te transfiri\u00F3",
+        "recibiste", "has recibido",
+        "te llego", "te llegó", "te lleg\u00F3",
+        "confirmacion de pago", "confirmación de pago",
+        "confirmaci\u00F3n de pago",
+        "pago recibido",
+        "yape recibido",
+        "plin recibido"
+    )
+
+    /**
+     * Promotional / marketing keywords. If any of these appear in the
+     * notification text we reject it outright — it's not a real payment.
+     */
+    private val promotionalBlacklist = listOf(
+        "participa", "sorteo", "ganaste", "ganador", "premiado",
+        "promo", "promoci\u00F3n", "promocion", "descuento",
+        "cup\u00F3n", "cupon", "c\u00F3digo", "codigo",
+        "oferta", "beneficio", "cashback", "recompensa",
+        "regalo", "gratis", "gana hasta", "gana un",
+        "invita", "comparte", "refiere", "registrate", "regístrate",
+        "activa tu", "abre tu", "solicita",
+        "tarjeta de cr\u00E9dito", "tarjeta de credito",
+        "pr\u00E9stamo", "prestamo",
+        "seguro", "dep\u00F3sito a plazo", "deposito a plazo",
+        "aprobado", "disponible para ti",
+        "puntos", "acumula", "canjea",
+        "nuevo en", "conoce", "descubre",
+        "encuesta", "evalua", "eval\u00FAa", "califica",
+        "actualiza tu app", "nueva versi\u00F3n", "nueva version"
     )
 
     fun isSupportedPackage(packageName: String): Boolean {
@@ -30,33 +58,44 @@ object PaymentNotificationParser {
     }
 
     fun shouldInspect(packageName: String, fullText: String): Boolean {
+        val normalized = normalizeText(fullText).lowercase()
+
+        // Reject promotional / marketing notifications immediately
+        if (isPromotional(normalized)) return false
+
+        // Always inspect official Yape or Plin packages
         if (isSupportedPackage(packageName)) return true
 
-        val normalized = normalizeText(fullText).lowercase()
-        return relevantHints.any { hint -> normalized.contains(hint) }
+        // For other packages, require an explicit payment signal
+        return paymentSignals.any { signal -> normalized.contains(signal) }
     }
 
     fun parse(packageName: String, fullText: String): ParsedPayment? {
         val normalized = normalizeText(fullText)
-        val parsed = when (packageName) {
+        val normalizedLower = normalized.lowercase()
+
+        // Final promotional guard — even if shouldInspect passed,
+        // double-check here in case parse() is called directly.
+        if (isPromotional(normalizedLower)) return null
+
+        return when (packageName) {
             YAPE_PACKAGE -> parseYape(normalized) ?: parsePlin(normalized)
             PLIN_PACKAGE -> parsePlin(normalized) ?: parseYape(normalized)
             else -> {
+                // Only try parsing if the text explicitly mentions Yape or Plin
                 when {
                     mentionsPlin(normalized) -> parsePlin(normalized) ?: parseYape(normalized)
                     mentionsYape(normalized) -> parseYape(normalized) ?: parsePlin(normalized)
-                    else -> parseYape(normalized) ?: parsePlin(normalized)
+                    else -> null  // No Yape/Plin mention — ignore
                 }
             }
         }
-
-        return parsed ?: parseGenericPayment(normalized)
     }
 
     private fun parseYape(text: String): ParsedPayment? {
         val amountPattern = """S/\s*\.?\s*(\d+(?:[\.,]\d{1,2})?)"""
         val regex1 = Regex(
-            """(?:Confirmaci[o\u00F3]n de pago(?: Yape!)?\s+)?(.+?)\s+te\s+(?:envi[o\u00F3]|ha enviado|mand[o\u00F3]|yape[o\u00F3])(?:\s+un pago por)?\s+$amountPattern(?:\s+por\s+Yape)?""",
+            """(?:Confirmaci[o\u00F3]n de pago(?: Yape!)?\s+)?(.+?)\s+(?:te\s+)?(?:envi[o\u00F3]|ha enviado|mand[o\u00F3]|yape[o\u00F3])(?:\s+un pago por)?\s+$amountPattern(?:\s+por\s+Yape)?""",
             RegexOption.IGNORE_CASE
         )
         val regex2 = Regex("""(?:Recibiste|Has recibido|Te lleg[o\u00F3])(?:\s+un)?(?:\s+Yape)?\s+$amountPattern\s+de\s+(.+)$""", RegexOption.IGNORE_CASE)
@@ -104,7 +143,7 @@ object PaymentNotificationParser {
             RegexOption.IGNORE_CASE
         )
         val senderFirstRegex = Regex(
-            """(.+?)\s+te\s+(?:pline[o\u00F3]|envi[o\u00F3]|ha enviado|mand[o\u00F3]|transferi[o\u00F3]|transfiri[o\u00F3]|pag[o\u00F3])(?:\s+un\s+Plin|\s+por\s+Plin)?(?:\s+de)?\s+$amountPattern(?:\s+por\s+Plin)?(?:\s|$)""",
+            """(.+?)\s+(?:te\s+)?(?:pline[o\u00F3]|envi[o\u00F3]|ha enviado|mand[o\u00F3]|transferi[o\u00F3]|transfiri[o\u00F3]|pag[o\u00F3])(?:\s+un\s+Plin|\s+por\s+Plin)?(?:\s+de)?\s+$amountPattern(?:\s+por\s+Plin)?(?:\s|$)""",
             RegexOption.IGNORE_CASE
         )
         val plinPrefixRegex = Regex(
@@ -172,25 +211,21 @@ object PaymentNotificationParser {
         }
     }
 
-    private fun parseGenericPayment(text: String): ParsedPayment? {
-        val amount = Regex("""S/\s*\.?\s*(\d+(?:[\.,]\d{1,2})?)""", RegexOption.IGNORE_CASE)
-            .find(text)
-            ?.groupValues
-            ?.getOrNull(1)
-            ?.replace(",", ".")
-            ?.toDoubleOrNull()
-            ?: return null
+    /**
+     * Returns true if the text contains promotional/marketing language.
+     * Must be called with a lowercase-normalized string.
+     */
+    private fun isPromotional(normalizedLower: String): Boolean {
+        return promotionalBlacklist.any { keyword -> normalizedLower.contains(keyword) }
+    }
 
-        val senderPatterns = listOf(
-            Regex("""de\s+([A-Za-zÁÉÍÓÚÑáéíóúñ0-9 .'-]{2,})$""", RegexOption.IGNORE_CASE),
-            Regex("""(.+?)\s+te\s+(?:envi[oó]|envio|ha enviado|mand[oó]|mando|yape[oó]|yapeo|pline[oó]|plineo|transferi[oó]|transfirió)\b""", RegexOption.IGNORE_CASE)
-        )
-
-        val sender = senderPatterns.firstNotNullOfOrNull { regex ->
-            regex.find(text)?.groupValues?.getOrNull(1)?.let(::cleanSender)?.takeIf { it.isNotBlank() }
-        } ?: "Cliente"
-
-        return ParsedPayment(amount = amount, sender = sender)
+    /**
+     * Returns true if the text contains at least one real payment signal
+     * (e.g. "recibiste", "te envió", "confirmación de pago").
+     * Must be called with a lowercase-normalized string.
+     */
+    private fun hasPaymentSignal(normalizedLower: String): Boolean {
+        return paymentSignals.any { signal -> normalizedLower.contains(signal) }
     }
 
     private fun normalizeText(value: String): String {
