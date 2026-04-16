@@ -108,1020 +108,6 @@ enum class DashboardTab {
     Premium
 }
 
-@Composable
-fun DashboardHeader(
-    onSettingsClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.primary,
-        shadowElevation = AppElevation.md
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.dashboard_header_full_title),
-                modifier = Modifier.weight(1f),
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Surface(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clickable(onClick = onSettingsClick),
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.12f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = stringResource(R.string.a11y_open_settings),
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ListeningStatusPill(
-    isEnabled: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(AppRadii.pill),
-        color = if (isEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
-        border = BorderStroke(
-            1.dp,
-            if (isEnabled) Color(0xFF1FA866).copy(alpha = 0.22f) else MaterialTheme.colorScheme.error.copy(alpha = 0.22f)
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (isEnabled) YapeCyan else MaterialTheme.colorScheme.error)
-            )
-            Text(
-                text = if (isEnabled) {
-                    stringResource(R.string.summary_live_badge)
-                } else {
-                    stringResource(R.string.home_status_pill_inactive)
-                },
-                color = if (isEnabled) Color(0xFF1FA866) else MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelLarge
-            )
-        }
-    }
-}
-
-@Composable
-fun SummaryCard(
-    total: Float,
-    count: Int,
-    yesterdayTotal: Float,
-    onClick: () -> Unit
-) {
-    val percentageLabel = buildDailyComparisonLabel(total, yesterdayTotal)
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppRadii.xl),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.lg)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 20.dp, vertical = 20.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .offset(x = (-22).dp, y = 36.dp)
-                    .size(112.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 24.dp, y = (-20).dp)
-                    .size(132.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f))
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(AppRadii.pill),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = stringResource(R.string.summary_balance_badge),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(AppRadii.pill),
-                        color = Color(0xFFD5FFF3)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF1FA866))
-                            )
-                            Text(
-                                text = stringResource(R.string.summary_payments_count_stacked, count),
-                                color = Color(0xFF1FA866),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.summary_title_editorial),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.headlineMedium,
-                        lineHeight = 32.sp
-                    )
-                    Text(
-                        text = stringResource(R.string.currency_amount, String.format(Locale.US, "%.2f", total)),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.displaySmall
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(AppRadii.pill),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = stringResource(R.string.summary_payments_count_compact, count),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                    Text(
-                        text = percentageLabel,
-                        color = if (yesterdayTotal > 0f) Color(0xFF1FA866) else MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.summary_last_update),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                    Row(
-                        modifier = Modifier.clickable(onClick = onClick),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.summary_view_detail),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = stringResource(R.string.summary_view_detail),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StatusCard(
-    isEnabled: Boolean,
-    onConfigClick: () -> Unit
-) {
-    Card(
-        onClick = onConfigClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = if (isEnabled) Color(0xFFEFFFF2) else Color(0xFFFFF1F1)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = if (isEnabled) Color(0xFF6CDD2E) else Color(0xFFE05A4F)
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 14.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.status_card_title),
-                    color = Color(0xFF263245),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = if (isEnabled) stringResource(R.string.status_active_subtitle) else stringResource(R.string.status_inactive_subtitle),
-                    color = if (isEnabled) Color(0xFF6CDD2E) else Color(0xFFE05A4F),
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
-            }
-
-            Switch(
-                checked = isEnabled,
-                onCheckedChange = { onConfigClick() },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFF6CDD2E),
-                    uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFFFA08C)
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun DashboardSectionHeader(
-    title: String,
-    subtitle: String? = null
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = title,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleLarge
-        )
-        if (subtitle != null) {
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
-}
-
-@Composable
-fun DashboardCompactPanel(
-    isEnabled: Boolean,
-    isPremium: Boolean,
-    trialDays: Int,
-    onStatusClick: () -> Unit,
-    onPremiumClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppRadii.xl),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.md)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.weight(1f)) {
-                    CompactInfoCard(
-                        eyebrow = stringResource(R.string.home_control_service_label),
-                        title = if (isEnabled) {
-                            stringResource(R.string.home_control_service_active_title)
-                        } else {
-                            stringResource(R.string.home_control_service_inactive_title)
-                        },
-                        supporting = if (isEnabled) {
-                            stringResource(R.string.home_control_service_active_support)
-                        } else {
-                            stringResource(R.string.home_control_service_inactive_support)
-                        },
-                        actionLabel = stringResource(R.string.home_control_service_action),
-                        accent = if (isEnabled) Color(0xFF1FA866) else MaterialTheme.colorScheme.error,
-                        background = if (isEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
-                        icon = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
-                        onClick = onStatusClick
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    CompactInfoCard(
-                        eyebrow = stringResource(R.string.home_control_premium_label),
-                        title = if (isPremium || trialDays > 0) {
-                            stringResource(R.string.home_control_premium_active_title)
-                        } else {
-                            stringResource(R.string.home_control_premium_inactive_title)
-                        },
-                        supporting = when {
-                            trialDays > 0 -> stringResource(R.string.home_control_premium_trial_support, trialDays)
-                            isPremium -> stringResource(R.string.home_control_premium_active_support)
-                            else -> stringResource(R.string.home_control_premium_inactive_support)
-                        },
-                        actionLabel = if (isPremium || trialDays > 0) {
-                            stringResource(R.string.premium_banner_manage)
-                        } else {
-                            stringResource(R.string.premium_banner_upgrade)
-                        },
-                        accent = Color(0xFF9B6A00),
-                        background = Color(0xFFFFF4D8),
-                        icon = Icons.Default.Star,
-                        onClick = onPremiumClick
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompactInfoCard(
-    eyebrow: String,
-    title: String,
-    supporting: String,
-    actionLabel: String,
-    accent: Color,
-    background: Color,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppRadii.md),
-        colors = CardDefaults.cardColors(containerColor = background),
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.14f))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(background)
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 14.dp, y = (-8).dp)
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.24f))
-            )
-
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        modifier = Modifier.size(38.dp),
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.86f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = accent,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = eyebrow,
-                        color = accent.copy(alpha = 0.78f),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleLarge,
-                        lineHeight = 24.sp
-                    )
-                    Text(
-                        text = supporting,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelMedium,
-                        lineHeight = 17.sp
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(AppRadii.pill),
-                    color = Color.White.copy(alpha = 0.72f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = actionLabel,
-                            color = accent,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = actionLabel,
-                            tint = accent,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PremiumBannerCard(
-    isPremium: Boolean,
-    trialDays: Int,
-    onClick: () -> Unit
-) {
-    val bannerTitle = if (isPremium || trialDays > 0) {
-        stringResource(R.string.premium_banner_active_title)
-    } else {
-        stringResource(R.string.premium_banner_upgrade_title)
-    }
-    val bannerSubtitle = if (isPremium || trialDays > 0) {
-        stringResource(R.string.premium_banner_active_subtitle)
-    } else {
-        stringResource(R.string.premium_banner_upgrade_subtitle)
-    }
-    val buttonLabel = if (isPremium || trialDays > 0) {
-        stringResource(R.string.premium_banner_manage)
-    } else {
-        stringResource(R.string.premium_banner_upgrade)
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC400)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(38.dp),
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.35f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFF8C5900),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp)
-            ) {
-                Text(
-                    text = bannerTitle,
-                    color = Color(0xFF523400),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp
-                )
-                Text(
-                    text = bannerSubtitle,
-                    color = Color(0xFF6A4A0F),
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp
-                )
-            }
-
-            Button(
-                onClick = onClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F2430)),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(999.dp)
-            ) {
-                Text(
-                    text = buttonLabel,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun WarningCard(
-    title: String,
-    body: String,
-    actionLabel: String,
-    accentColor: Color,
-    backgroundColor: Color,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            modifier = Modifier.size(42.dp),
-            shape = RoundedCornerShape(AppRadii.md),
-            color = backgroundColor
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 12.dp, end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                text = body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                lineHeight = 18.sp
-            )
-        }
-
-        Surface(
-            shape = RoundedCornerShape(AppRadii.pill),
-            color = backgroundColor
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = actionLabel,
-                    color = accentColor,
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = actionLabel,
-                    tint = accentColor,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun HomeToolListItem(
-    title: String,
-    subtitle: String? = null,
-    icon: ImageVector? = null,
-    iconRes: Int? = null,
-    tint: Color,
-    backgroundTint: Color,
-    badgeText: String? = null,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppRadii.lg),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.sm)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(46.dp),
-                shape = RoundedCornerShape(AppRadii.md),
-                color = backgroundTint
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    if (iconRes != null) {
-                        Icon(
-                            painter = painterResource(id = iconRes),
-                            contentDescription = null,
-                            tint = tint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    } else if (icon != null) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = tint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 14.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    if (badgeText != null) {
-                        Surface(
-                            shape = RoundedCornerShape(AppRadii.pill),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Text(
-                                text = badgeText,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.tool_open_label),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
-@Composable
-fun FeaturedToolCard(
-    title: String,
-    subtitle: String,
-    iconRes: Int,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppRadii.xl),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.md)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            AppColors.SurfaceBrand,
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
-                        )
-                    )
-                )
-                .padding(18.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(82.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.35f))
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        modifier = Modifier.size(52.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        color = Color.White.copy(alpha = 0.65f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                painter = painterResource(id = iconRes),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = Color.White.copy(alpha = 0.65f)
-                    ) {
-                        Text(
-                        text = stringResource(R.string.premium_chip_title),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        letterSpacing = 0.6.sp
-                        )
-                    }
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = subtitle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-
-                Text(
-                    text = stringResource(R.string.tool_open_label),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ToolGridCard(
-    title: String,
-    subtitle: String,
-    icon: ImageVector? = null,
-    iconRes: Int? = null,
-    badgeText: String? = null,
-    tint: Color,
-    backgroundTint: Color,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(154.dp),
-        shape = RoundedCornerShape(AppRadii.lg),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.sm)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 16.dp, y = (-10).dp)
-                    .size(66.dp)
-                    .clip(CircleShape)
-                    .background(backgroundTint.copy(alpha = 0.45f))
-            )
-
-            Column(
-                modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(48.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            color = backgroundTint
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                if (iconRes != null) {
-                                    Icon(
-                                        painter = painterResource(id = iconRes),
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = Modifier.size(21.dp)
-                                    )
-                                } else if (icon != null) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = Modifier.size(21.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        if (badgeText != null) {
-                            Surface(
-                                shape = RoundedCornerShape(999.dp),
-                                color = backgroundTint
-                            ) {
-                                Text(
-                                    text = badgeText,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    color = tint,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 10.sp,
-                                    letterSpacing = 0.5.sp
-                                )
-                            }
-                        }
-                    }
-
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(
-                            text = title,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.titleMedium,
-                            lineHeight = 18.sp
-                        )
-                        Text(
-                            text = subtitle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.labelMedium,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
-
-                Text(
-                    text = stringResource(R.string.tool_open_label),
-                    color = tint,
-                    style = MaterialTheme.typography.labelLarge,
-                    letterSpacing = 0.2.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ToolWideCard(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    tint: Color,
-    backgroundTint: Color,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppRadii.lg),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.sm)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = backgroundTint
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = tint,
-                        modifier = Modifier.size(21.dp)
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 14.dp)
-            ) {
-                Text(
-                    text = title,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = subtitle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,
-                    lineHeight = 16.sp
-                )
-            }
-
-            Text(
-                text = stringResource(R.string.tool_open_label),
-                color = tint,
-                style = MaterialTheme.typography.labelLarge
-            )
-        }
-    }
-}
 
 @Composable
 fun HomeTopBar(
@@ -1155,39 +141,39 @@ fun HomeTopBar(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
                         modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        BrandLogo(
-                            modifier = Modifier.size(42.dp),
-                            backgroundColor = Color.Transparent,
-                            shape = RoundedCornerShape(14.dp)
-                        )
                         Text(
                             text = stringResource(R.string.app_name),
                             color = Color.White,
-                            style = MaterialTheme.typography.headlineSmall
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = (-0.5).sp
+                            )
                         )
                     }
 
+                    // Botón de Perfil con estilo Premium Glassmorphism
                     Surface(
                         modifier = Modifier
-                            .size(54.dp)
+                            .size(48.dp)
                             .clickable(onClick = onProfileClick),
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, YapeCyan.copy(alpha = 0.38f))
+                        color = Color.White.copy(alpha = 0.04f),
+                        border = BorderStroke(1.dp, Brush.linearGradient(
+                            colors = listOf(YapeCyan.copy(alpha = 0.4f), YapePurple.copy(alpha = 0.4f))
+                        ))
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = stringResource(R.string.bottom_nav_profile),
-                                tint = YapePurple,
-                                modifier = Modifier.size(28.dp)
+                                tint = Color.White.copy(alpha = 0.9f),
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -1344,107 +330,7 @@ private fun HomeSetupAccessShortcut(
     }
 }
 
-@Composable
-fun HomeListenerStatusCard(
-    isListeningEnabled: Boolean,
-    onClick: () -> Unit
-) {
-    val accentColor = if (isListeningEnabled) MaterialTheme.colorScheme.primary else Color(0xFFE1802F)
-    val pulseTransition = rememberInfiniteTransition(label = "listener_status_pulse")
-    val pulseScale by pulseTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.32f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1400),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "listener_status_scale"
-    )
-    val pulseAlpha by pulseTransition.animateFloat(
-        initialValue = if (isListeningEnabled) 0.16f else 0.10f,
-        targetValue = if (isListeningEnabled) 0.30f else 0.18f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1400),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "listener_status_alpha"
-    )
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier.size(28.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .graphicsLayer {
-                        scaleX = pulseScale
-                        scaleY = pulseScale
-                    }
-                    .clip(CircleShape)
-                    .background(accentColor.copy(alpha = pulseAlpha))
-            )
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(accentColor)
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 12.dp, end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            if (!isListeningEnabled) {
-                Text(
-                    text = stringResource(R.string.home_listener_status_inactive_title),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleSmall
-                )
-            }
-            Text(
-                text = if (isListeningEnabled) {
-                    stringResource(R.string.home_listener_status_active_body)
-                } else {
-                    stringResource(R.string.home_listener_status_inactive_body)
-                },
-                color = accentColor,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = if (isListeningEnabled) "Activo" else stringResource(R.string.tool_open_label),
-                color = accentColor,
-                style = MaterialTheme.typography.labelLarge
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = if (isListeningEnabled) {
-                    stringResource(R.string.home_listener_status_action_active)
-                } else {
-                    stringResource(R.string.home_listener_status_action_inactive)
-                },
-                tint = accentColor,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
 
 @Composable
 fun HomeBalanceHeroCard(
@@ -1564,61 +450,133 @@ fun HomeBalanceHeroCard(
                     }
                 }
 
-                HomeHeroWaveform(alpha = if (isListeningEnabled) 0.92f else 0.56f)
+                HomeHeroWaveform(
+                    alpha = if (isListeningEnabled) 0.92f else 0.56f,
+                    isAnimating = isListeningEnabled
+                )
+            }
+        }
+    }
+}
+
+
+
+@Composable
+fun HomeWidgetPinCard(
+    isPinned: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = if (isPinned) ({}) else onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161C26)),
+        border = BorderStroke(1.dp, Color(0xFF1DB870).copy(alpha = if (isPinned) 0.1f else 0.24f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF1DB870).copy(alpha = 0.12f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        tint = Color(0xFF1DB870),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = if (isPinned) "Widget activado" else "¿Quieres ver tus cobros en Inicio?",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+                Text(
+                    text = if (isPinned) "Tu resumen está en vivo fuera de la app" else "Añade el widget oficial de HablaPago",
+                    color = Color.White.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (isPinned) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF1DB870),
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = Color(0xFF1DB870)
+                ) {
+                    Text(
+                        text = "Añadir",
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun HomeHeroMetricPill(
-    modifier: Modifier = Modifier,
-    label: String,
-    value: String
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.12f)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = label,
-                color = Color.White.copy(alpha = 0.72f),
-                style = MaterialTheme.typography.labelSmall
-            )
-            Text(
-                text = value,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-    }
-}
-
-@Composable
 private fun HomeHeroWaveform(
-    alpha: Float
+    alpha: Float,
+    isAnimating: Boolean = false
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "waveform")
+    val time by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "waveform_time"
+    )
+
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
     ) {
-        val bars = listOf(
+        val baseBars = listOf(
             0.10f, 0.16f, 0.36f, 0.62f, 0.30f, 0.18f, 0.12f, 0.18f, 0.16f, 0.12f,
             0.24f, 0.46f, 0.72f, 0.42f, 0.20f, 0.12f, 0.20f, 0.16f, 0.20f, 0.42f,
             0.64f, 0.48f, 0.18f, 0.14f, 0.10f, 0.18f, 0.34f, 0.58f, 0.34f, 0.18f,
             0.12f, 0.18f, 0.42f, 0.26f, 0.14f, 0.10f, 0.18f, 0.30f, 0.20f, 0.14f
         )
-        val spacing = size.width / (bars.size + 1)
+        val spacing = size.width / (baseBars.size + 1)
         val centerY = size.height / 2f
         val strokeWidth = spacing * 0.42f
 
-        bars.forEachIndexed { index, bar ->
+        baseBars.forEachIndexed { index, baseBar ->
+            val scale = if (isAnimating) {
+                0.65f + 0.35f * kotlin.math.sin(time + index * 0.5f).toFloat()
+            } else {
+                1f
+            }
+            val bar = baseBar * scale
             val x = spacing * (index + 1)
             val halfHeight = size.height * bar / 2f
             drawLine(
@@ -1632,135 +590,31 @@ private fun HomeHeroWaveform(
     }
 }
 
-data class HomeQuickActionItem(
-    val label: String,
-    val iconRes: Int,
-    val iconTint: Color,
-    val iconBackground: Color,
-    val onClick: () -> Unit
-)
+
 
 @Composable
-fun HomeQuickActionsGrid(
-    actions: List<HomeQuickActionItem>,
+fun DashboardSectionHeader(
+    title: String,
+    subtitle: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        actions.chunked(2).forEach { rowActions ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                rowActions.forEach { action ->
-                    HomeQuickActionButton(
-                        action = action,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                if (rowActions.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
+        Text(
+            text = title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+        )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
-}
-
-@Composable
-fun HomeQuickActionButton(
-    action: HomeQuickActionItem,
-    modifier: Modifier = Modifier
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val haptic = LocalHapticFeedback.current
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = tween(durationMillis = 130),
-        label = "home_quick_action_scale"
-    )
-
-    Surface(
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    action.onClick()
-                }
-            ),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.65f)),
-        shadowElevation = AppElevation.sm
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(118.dp)
-                .padding(horizontal = AppSpacing.item, vertical = AppSpacing.item),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HablaPagoIconTile(
-                    iconRes = action.iconRes,
-                    contentDescription = action.label,
-                    tint = action.iconTint,
-                    containerColor = action.iconBackground
-                )
-
-                HablaPagoChevron(
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = action.label,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    text = stringResource(R.string.tool_open_label),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun HomeQuickAction(
-    modifier: Modifier = Modifier,
-    label: String,
-    iconRes: Int,
-    iconTint: Color,
-    iconBackground: Color,
-    onClick: () -> Unit
-) {
-    HomeQuickActionButton(
-        action = HomeQuickActionItem(
-            label = label,
-            iconRes = iconRes,
-            iconTint = iconTint,
-            iconBackground = iconBackground,
-            onClick = onClick
-        ),
-        modifier = modifier
-    )
 }
 
 @Composable
@@ -1829,80 +683,7 @@ fun HomeRecentActivityCard(
     }
 }
 
-@Composable
-fun HomeFeatureCard(
-    title: String,
-    body: String,
-    badgeText: String,
-    iconRes: Int,
-    iconTint: Color,
-    iconBackground: Color,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hablaPagoPressable(interactionSource)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(vertical = AppSpacing.item),
-        verticalAlignment = Alignment.Top
-    ) {
-        HablaPagoIconTile(
-            iconRes = iconRes,
-            tint = iconTint,
-            containerColor = iconBackground,
-            size = 42.dp
-        )
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = AppSpacing.item, end = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f)
-                )
-                Surface(
-                    shape = RoundedCornerShape(AppRadii.pill),
-                    color = iconBackground
-                ) {
-                    Text(
-                        text = badgeText,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        color = iconTint,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-
-            Text(
-                text = body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                lineHeight = 18.sp,
-                maxLines = 2
-            )
-        }
-
-        HablaPagoChevron(
-            modifier = Modifier.padding(top = 2.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            size = AppIconSizes.sm,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    }
-}
 
 @Composable
 fun HomeSectionDivider() {
@@ -1982,109 +763,7 @@ fun HomeSecondaryActions(
     }
 }
 
-@Composable
-fun HomeReferenceBottomBar(
-    onShowHistory: () -> Unit,
-    onShowPayments: () -> Unit,
-    onShowReports: () -> Unit,
-    onShowPremium: () -> Unit
-) {
-    Box {
-        Surface(
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            shadowElevation = 18.dp
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp, top = 20.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    HomeReferenceBottomItem(
-                        label = stringResource(R.string.bottom_nav_home),
-                        iconRes = R.drawable.ic_nav_home,
-                        selected = true,
-                        onClick = {}
-                    )
-                    HomeReferenceBottomItem(
-                        label = stringResource(R.string.bottom_nav_history),
-                        iconRes = R.drawable.ic_nav_history,
-                        selected = false,
-                        onClick = onShowHistory
-                    )
-                    Spacer(modifier = Modifier.width(64.dp))
-                    HomeReferenceBottomItem(
-                        label = stringResource(R.string.bottom_nav_reports),
-                        iconRes = R.drawable.ic_nav_reports,
-                        selected = false,
-                        onClick = onShowReports
-                    )
-                    HomeReferenceBottomItem(
-                        label = "Premium",
-                        iconRes = R.drawable.ic_nav_premium,
-                        selected = false,
-                        onClick = onShowPremium
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-            }
-        }
 
-        CenterBottomBarItem(
-            label = stringResource(R.string.bottom_nav_payments),
-            selected = false,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-14).dp),
-            onClick = onShowPayments
-        )
-    }
-}
-
-@Composable
-private fun HomeReferenceBottomItem(
-    label: String,
-    icon: ImageVector? = null,
-    iconRes: Int? = null,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .width(64.dp)
-            .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (iconRes != null) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = label,
-                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-        } else if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = label,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            fontSize = 12.sp
-        )
-    }
-}
 
 @Composable
 fun HomeActionStrip(
@@ -2094,43 +773,109 @@ fun HomeActionStrip(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Título de la sección
         Text(
             text = stringResource(R.string.home_quick_actions_title),
             color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.headlineSmall
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(2.dp))
-        HomeFeatureCard(
-            title = stringResource(R.string.bottom_nav_payments),
-            body = stringResource(R.string.home_feature_listening_body),
-            badgeText = stringResource(R.string.home_feature_badge_ready),
-            iconRes = R.drawable.ic_nav_payments,
-            iconTint = YapePurple,
-            iconBackground = YapePurple.copy(alpha = 0.14f),
-            onClick = onShowPayments
-        )
-        HomeSectionDivider()
-        HomeFeatureCard(
-            title = stringResource(R.string.bottom_nav_reports),
-            body = stringResource(R.string.home_feature_reports_body),
-            badgeText = "Premium",
-            iconRes = R.drawable.ic_nav_reports,
-            iconTint = YapeCyan,
-            iconBackground = YapeCyan.copy(alpha = 0.14f),
-            onClick = onShowReports
-        )
-        HomeSectionDivider()
-        HomeFeatureCard(
-            title = stringResource(R.string.bottom_nav_voice),
-            body = stringResource(R.string.home_feature_voice_body),
-            badgeText = "Premium",
-            iconRes = R.drawable.ic_voice_pro,
-            iconTint = YapePurple,
-            iconBackground = YapePurple.copy(alpha = 0.14f),
-            onClick = onShowVoiceSettings
-        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            HomeQuickGridItem(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.bottom_nav_payments),
+                subtitle = "Monitorear",
+                iconRes = R.drawable.ic_nav_payments,
+                iconTint = YapePurple,
+                onClick = onShowPayments
+            )
+            HomeQuickGridItem(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.bottom_nav_reports),
+                subtitle = "Exportar",
+                iconRes = R.drawable.ic_nav_reports,
+                iconTint = YapeCyan,
+                onClick = onShowReports
+            )
+            HomeQuickGridItem(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.bottom_nav_voice),
+                subtitle = "Ajustar",
+                iconRes = R.drawable.ic_voice_pro,
+                iconTint = YapePurple,
+                onClick = onShowVoiceSettings
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeQuickGridItem(
+    modifier: Modifier = Modifier,
+    title: String,
+    subtitle: String,
+    iconRes: Int,
+    iconTint: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .height(115.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White.copy(alpha = 0.04f),
+        border = BorderStroke(1.dp, Brush.linearGradient(
+            colors = listOf(iconTint.copy(alpha = 0.6f), Color.Transparent)
+        ))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Icon Header
+                Surface(
+                    shape = CircleShape,
+                    color = iconTint.copy(alpha = 0.15f),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                
+                // Text Footer
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
     }
 }
 

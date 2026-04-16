@@ -23,6 +23,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -59,71 +60,142 @@ class PagoGlanceWidget : GlanceAppWidget() {
                 }
             }
         }
+
+        fun requestPin(context: Context) {
+            val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(context)
+            val myProvider = android.content.ComponentName(context, PagoWidgetReceiver::class.java)
+
+            if (appWidgetManager.isRequestPinAppWidgetSupported) {
+                appWidgetManager.requestPinAppWidget(myProvider, null, null)
+            }
+        }
     }
 }
 
 @Composable
 private fun WidgetContent(total: Double, count: Int) {
-    val bgColor = ColorProvider(Color(0xFF0E2B1F))          // verde oscuro premium
-    val brandGreen = ColorProvider(Color(0xFF1DB870))        // verde marca
-    val whiteHigh = ColorProvider(Color(0xFFFFFFFF))
-    val whiteMid = ColorProvider(Color(0xB3FFFFFF))          // 70% opacity
+    // Definición de colores usando Hex para máxima compatibilidad en widgets
+    val bgColor = ColorProvider(Color(0xFF0D1117))
+    val brandGreen = Color(0xFF1DB870)
+    val brandGreenProvider = ColorProvider(brandGreen)
+    val brandGreenTransparent = ColorProvider(Color(0x1F1DB870)) // ~12% Alpha Green
+    val white90 = ColorProvider(Color(0xE6FFFFFF))               // 90% Alpha White
+    val white50 = ColorProvider(Color(0x80FFFFFF))               // 50% Alpha White
+    val white04 = ColorProvider(Color(0x0AFFFFFF))               // 4% Alpha White
 
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(bgColor)
             .clickable(actionStartActivity<MainActivity>())
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        contentAlignment = Alignment.CenterStart
+            .padding(12.dp),
+        contentAlignment = Alignment.TopStart
     ) {
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = GlanceModifier.fillMaxSize()
         ) {
-            // Columna izquierda: etiqueta + total
-            Column(
-                modifier = GlanceModifier.defaultWeight()
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "TOTAL HOY",
+                    text = "HablaPago",
                     style = TextStyle(
-                        color = whiteMid,
-                        fontSize = 9.sp,
+                        color = white90,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
-                Spacer(GlanceModifier.height(2.dp))
-                Text(
-                    text = "S/ ${String.format(Locale.US, "%.2f", total)}",
-                    style = TextStyle(
-                        color = brandGreen,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold
+                Spacer(GlanceModifier.defaultWeight())
+                
+                Row(
+                    modifier = GlanceModifier
+                        .background(brandGreenTransparent)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = GlanceModifier
+                            .width(6.dp)
+                            .height(6.dp)
+                            .background(brandGreenProvider)
+                    ) {}
+                    Spacer(GlanceModifier.width(6.dp))
+                    Text(
+                        text = "VIVO",
+                        style = TextStyle(
+                            color = brandGreenProvider,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                }
             }
 
-            Spacer(GlanceModifier.width(12.dp))
+            Spacer(GlanceModifier.defaultWeight())
 
-            // Columna derecha: número de pagos
-            Column(
-                horizontalAlignment = Alignment.End
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    Text(
+                        text = "TOTAL RECAUDADO",
+                        style = TextStyle(
+                            color = white50,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    Text(
+                        text = "S/ ${String.format(Locale.US, "%.2f", total)}",
+                        style = TextStyle(
+                            color = ColorProvider(Color.White),
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = count.toString(),
+                        style = TextStyle(
+                            color = brandGreenProvider,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Text(
+                        text = if (count == 1) "COBRO" else "COBROS",
+                        style = TextStyle(
+                            color = brandGreenProvider,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+            }
+
+            Spacer(GlanceModifier.height(8.dp))
+
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .background(white04)
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = count.toString(),
-                    style = TextStyle(
-                        color = whiteHigh,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    text = "◈",
+                    style = TextStyle(color = brandGreenProvider, fontSize = 10.sp)
                 )
+                Spacer(GlanceModifier.width(6.dp))
                 Text(
-                    text = if (count == 1) "pago" else "pagos",
+                    text = "$count ${if (count == 1) "pago captado" else "pagos captados"}",
                     style = TextStyle(
-                        color = whiteMid,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
+                        color = white50,
+                        fontSize = 10.sp
                     )
                 )
             }

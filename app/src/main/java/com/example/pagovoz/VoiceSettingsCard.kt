@@ -26,11 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,10 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -55,16 +47,28 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import java.util.Locale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pagovoz.ui.components.HablaPagoIconTile
 import com.example.pagovoz.ui.components.hablaPagoPressable
 import com.example.pagovoz.ui.theme.AppIconSizes
 import com.example.pagovoz.ui.theme.AppSpacing
+import com.example.pagovoz.ui.theme.AppRadii
 import com.example.pagovoz.ui.theme.YapePurple
-import java.util.Locale
+
+
 
 private data class VoiceOption(
     val name: String,
@@ -72,14 +76,16 @@ private data class VoiceOption(
     val subtitle: String,
     val speakingStyle: String,
     val accentStart: Color,
-    val accentEnd: Color
+    val accentEnd: Color,
+    val avatarUrl: String
 )
 
 private data class VoicePersona(
     val displayName: String,
     val speakingStyle: String,
     val accentStart: Color,
-    val accentEnd: Color
+    val accentEnd: Color,
+    val isFemale: Boolean
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,34 +97,97 @@ fun VoiceSettingsScreen(
     onShowReports: () -> Unit,
     onShowPremium: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            AppSectionTopBar(
-                title = stringResource(R.string.voice_screen_title),
-                onBack = onBack
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            DashboardBottomBar(selectedTab = DashboardTab.Premium) { tab ->
-                when (tab) {
-                    DashboardTab.Home -> onBack()
-                    DashboardTab.History -> onShowHistory()
-                    DashboardTab.Payments -> onShowPayments()
-                    DashboardTab.Reports -> onShowReports()
-                    DashboardTab.Premium -> onShowPremium()
-                }
-            }
-        }
-    ) { padding ->
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF07090E))
+    ) {
+        // Fondo con resplandores dinámicos sutiles
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            ProVoiceSettingsCard()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(Color(0xFF1A1A2E), Color.Transparent),
+                        center = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        radius = 2000f
+                    )
+                )
+        )
+        
+        Scaffold(
+            topBar = {
+                AppSectionTopBar(
+                    title = "Configuración Pro",
+                    onBack = onBack
+                )
+            },
+            containerColor = Color.Transparent,
+            bottomBar = {
+                DashboardBottomBar(selectedTab = DashboardTab.Premium) { tab ->
+                    when (tab) {
+                        DashboardTab.Home -> onBack()
+                        DashboardTab.History -> onShowHistory()
+                        DashboardTab.Payments -> onShowPayments()
+                        DashboardTab.Reports -> onShowReports()
+                        DashboardTab.Premium -> onShowPremium()
+                    }
+                }
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(500.dp) // Altura fija para que la sección ocupe espacio pero esté oculta
+                ) {
+                    // Capa de Bloqueo Total - Estilo "En Construcción" Premium
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color(0xFF090B10), // Sólido para ocultar el diseño
+                        shape = RoundedCornerShape(32.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            // Patrón de fondo sutil o decorativo (opcional, pero ayuda a la estética)
+                            
+                            Column(
+                                modifier = Modifier.rotate(-15f), // El mensaje en diagonal
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "PRÓXIMAMENTE",
+                                    color = Color(0xFFFFD700), // Dorado
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 32.sp,
+                                    letterSpacing = 4.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Surface(
+                                    color = Color(0xFFFFD700),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "ESTAMOS EN CONSTRUCCIÓN",
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -131,10 +200,10 @@ fun ProVoiceSettingsCard() {
     var speechRate by remember { mutableStateOf(SessionManager.getTtsSpeechRate(context)) }
     var speechPitch by remember { mutableStateOf(SessionManager.getTtsSpeechPitch(context)) }
     var amountOnly by remember { mutableStateOf(SessionManager.isTtsAmountOnly(context)) }
-    var repeatCount by remember { mutableStateOf(SessionManager.getTtsRepeatCount(context)) }
     var isLoading by remember { mutableStateOf(true) }
-    var showVoicePicker by remember { mutableStateOf(false) }
     var engine by remember { mutableStateOf<TextToSpeech?>(null) }
+
+
 
     DisposableEffect(context) {
         val engineHolder = arrayOfNulls<TextToSpeech>(1)
@@ -181,691 +250,398 @@ fun ProVoiceSettingsCard() {
         }
         return
     }
-
     val currentVoice = voiceOptions.firstOrNull { it.name == selectedVoiceName }
-    val currentVoiceTitle = currentVoice?.title ?: stringResource(R.string.voice_pro_default_voice)
-    val currentVoiceSubtitle = currentVoice?.subtitle ?: stringResource(R.string.voice_pro_default_locale)
-    val currentVoiceStyle = currentVoice?.speakingStyle ?: stringResource(R.string.voice_pro_default_style)
-    val currentVoiceAccentStart = currentVoice?.accentStart ?: Color(0xFF7F3698)
-    val currentVoiceAccentEnd = currentVoice?.accentEnd ?: YapePurple
-    val playbackModeLabel = if (amountOnly) {
-        stringResource(R.string.voice_pro_amount_only_title)
-    } else {
-        stringResource(R.string.voice_pro_mode_off)
-    }
-    val repeatLabel = if (repeatCount == 1) {
-        context.getString(R.string.voice_pro_repeat_times, repeatCount)
-    } else {
-        context.getString(R.string.voice_pro_repeat_times_plural, repeatCount)
-    }
 
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        ActiveVoiceCard(
-            voiceTitle = currentVoiceTitle,
-            voiceSubtitle = currentVoiceSubtitle,
-            voiceStyle = currentVoiceStyle,
-            playbackModeLabel = playbackModeLabel,
-            repeatLabel = repeatLabel,
-            accentStart = currentVoiceAccentStart,
-            accentEnd = currentVoiceAccentEnd,
-            onChangeVoice = { showVoicePicker = true }
-        )
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            VoiceSettingsSectionHeader(
-                title = stringResource(R.string.voice_audio_controls_title),
-                subtitle = stringResource(R.string.voice_audio_controls_subtitle)
-            )
-
-            AudioSliderRow(
-                icon = Icons.Default.Settings,
-                title = stringResource(R.string.voice_pro_speed),
-                subtitle = stringResource(R.string.voice_pro_speed_subtitle),
-                valueLabel = "%.1fx".format(Locale.US, speechRate),
-                value = speechRate,
-                range = 0.6f..1.8f,
-                startLabel = stringResource(R.string.voice_pro_speed_start),
-                endLabel = stringResource(R.string.voice_pro_speed_end),
-                onValueChange = {
-                    speechRate = it
-                    SessionManager.setTtsSpeechRate(context, it)
-                }
-            )
-
-            VoicePanelDivider()
-
-            AudioSliderRow(
-                icon = Icons.Default.Info,
-                title = stringResource(R.string.voice_pro_tone_pitch),
-                subtitle = stringResource(R.string.voice_pro_tone_subtitle),
-                valueLabel = pitchLabel(speechPitch),
-                value = speechPitch,
-                range = 0.7f..1.6f,
-                startLabel = stringResource(R.string.voice_pro_tone_start),
-                endLabel = stringResource(R.string.voice_pro_tone_end),
-                onValueChange = {
-                    speechPitch = it
-                    SessionManager.setTtsSpeechPitch(context, it)
+    Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
+        
+        // --- SECCIÓN 1: EL PROTAGONISTA (VOZ SELECCIONADA) ---
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            ActiveVoiceImmersiveCard(
+                option = currentVoice,
+                onClickTest = {
+                    engine?.let {
+                        applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch)
+                        it.speak(
+                            "¡Hola! Soy tu asistente de voz. Estoy listo para anunciar tus pagos.",
+                            TextToSpeech.QUEUE_FLUSH,
+                            null,
+                            "voice_test"
+                        )
+                    }
                 }
             )
         }
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            VoiceSettingsSectionHeader(
-                title = stringResource(R.string.voice_playback_options_title),
-                subtitle = stringResource(R.string.voice_playback_options_subtitle)
-            )
-
-            VoicePlaybackRow(
-                title = stringResource(R.string.voice_pro_amount_only_title),
-                subtitle = stringResource(R.string.voice_pro_amount_only_subtitle),
-                status = if (amountOnly) stringResource(R.string.voice_pro_mode_on) else stringResource(R.string.voice_pro_mode_off),
-                enabled = amountOnly,
-                onToggle = {
-                    amountOnly = it
-                    SessionManager.setTtsAmountOnly(context, it)
-                }
-            )
-
-            VoicePanelDivider()
-
-            VoiceRepeatRow(
-                title = stringResource(R.string.voice_pro_repeat_title),
-                subtitle = stringResource(R.string.voice_pro_repeat_subtitle),
-                repeatCount = repeatCount,
-                onSelect = { option ->
-                    repeatCount = option
-                    SessionManager.setTtsRepeatCount(context, option)
-                }
-            )
-        }
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+        // --- SECCIÓN 2: SELECTOR DE MODELOS ---
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                VoiceSettingsSectionHeader(
-                    title = stringResource(R.string.voice_preview_title),
-                    subtitle = stringResource(R.string.voice_preview_subtitle),
-                    modifier = Modifier.weight(1f)
+                Text(
+                    text = "Modelos Disponibles",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
                 )
-                TextButton(
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                    onClick = {
-                        SessionManager.resetTtsSettings(context)
-                        selectedVoiceName = SessionManager.getTtsVoiceName(context)
-                        speechRate = SessionManager.getTtsSpeechRate(context)
-                        speechPitch = SessionManager.getTtsSpeechPitch(context)
-                        amountOnly = SessionManager.isTtsAmountOnly(context)
-                        repeatCount = SessionManager.getTtsRepeatCount(context)
-                        engine?.let { applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch) }
-                    }
-                ) {
-                    Text(
-                        text = stringResource(R.string.voice_pro_restore_short),
-                        color = YapePurple,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                Text(
+                    text = "${voiceOptions.size} tipos",
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 12.sp
+                )
+            }
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(voiceOptions) { option ->
+                    ModernVoiceThumbnail(
+                        option = option,
+                        selected = selectedVoiceName == option.name,
+                        onClick = { 
+                            selectedVoiceName = option.name
+                            SessionManager.setTtsVoiceName(context, option.name)
+                            engine?.let { applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch) }
+                        }
                     )
                 }
             }
-
-            PreviewVoiceCard(
-                title = stringResource(R.string.voice_preview_yape_title),
-                sampleLine = stringResource(R.string.voice_preview_yape_sample),
-                sampleHighlight = stringResource(R.string.voice_preview_yape_badge),
-                accent = Color(0xFFB46BF6),
-                background = Color(0xFFF4ECFE),
-                onClick = {
-                    engine?.let {
-                        applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch)
-                        it.speak(
-                            buildPreviewMessage(
-                                appName = "Yape",
-                                sender = "Maria",
-                                naturalAmount = "doce soles con cincuenta centimos",
-                                amountOnly = amountOnly
-                            ),
-                            TextToSpeech.QUEUE_FLUSH,
-                            null,
-                            "voice_preview_yape"
-                        )
-                    }
-                }
-            )
-            PreviewVoiceCard(
-                title = stringResource(R.string.voice_preview_plin_title),
-                sampleLine = stringResource(R.string.voice_preview_plin_sample),
-                sampleHighlight = stringResource(R.string.voice_preview_plin_badge),
-                accent = Color(0xFF34B7D7),
-                background = Color(0xFFEAFBFF),
-                onClick = {
-                    engine?.let {
-                        applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch)
-                        it.speak(
-                            buildPreviewMessage(
-                                appName = "Plin",
-                                sender = "Carlos",
-                                naturalAmount = "ocho soles",
-                                amountOnly = amountOnly
-                            ),
-                            TextToSpeech.QUEUE_FLUSH,
-                            null,
-                            "voice_preview_plin"
-                        )
-                    }
-                }
-            )
         }
-    }
 
-    if (showVoicePicker) {
-        AlertDialog(
-            onDismissRequest = { showVoicePicker = false },
-            title = { Text(stringResource(R.string.voice_pro_pick_title)) },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(320.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    voiceOptions.forEach { option ->
-                        VoicePersonaOptionCard(
-                            option = option,
-                            selected = selectedVoiceName == option.name,
-                            onClick = {
-                                selectedVoiceName = option.name
-                                SessionManager.setTtsVoiceName(context, option.name)
-                                engine?.let { applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch) }
-                                showVoicePicker = false
-                            }
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showVoicePicker = false }) {
-                    Text(stringResource(R.string.voice_pro_close))
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun ActiveVoiceCard(
-    voiceTitle: String,
-    voiceSubtitle: String,
-    voiceStyle: String,
-    playbackModeLabel: String,
-    repeatLabel: String,
-    accentStart: Color,
-    accentEnd: Color,
-    onChangeVoice: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        // --- SECCIÓN 3: CONTROL DE PRECISIÓN ---
+        Surface(
+            shape = RoundedCornerShape(32.dp),
+            color = Color.White.copy(alpha = 0.03f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            VoiceAvatar(
-                name = voiceTitle,
-                accentStart = accentStart,
-                accentEnd = accentEnd,
-                modifier = Modifier.size(58.dp)
-            )
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp, end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.voice_active_label),
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "Personalizar Lectura",
+                    color = Color.White.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp,
-                    letterSpacing = 0.8.sp
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Text(
-                    text = "$voiceTitle (${stringResource(R.string.voice_premium_suffix)})",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = voiceSubtitle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp
-                )
-            }
-            TextButton(onClick = onChangeVoice, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-                Text(
-                    text = stringResource(R.string.voice_pro_choose_voice),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            }
-        }
 
-        Text(
-            text = voiceStyle,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
-            lineHeight = 19.sp
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            VoiceHeroPill(
-                text = playbackModeLabel,
-                modifier = Modifier.weight(1f)
-            )
-            VoiceHeroPill(
-                text = repeatLabel,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun AudioSliderRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    valueLabel: String,
-    value: Float,
-    range: ClosedFloatingPointRange<Float>,
-    startLabel: String,
-    endLabel: String,
-    onValueChange: (Float) -> Unit
-) {
-    Column(modifier = Modifier.padding(vertical = 2.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = valueLabel,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 13.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = subtitle,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
-            lineHeight = 17.sp
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = startLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                fontSize = 11.sp
-            )
-            Text(
-                text = endLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                fontSize = 11.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun VoiceHeroPill(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier) {
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp
-        )
-    }
-}
-
-@Composable
-private fun VoicePlaybackRow(
-    title: String,
-    subtitle: String,
-    status: String,
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp
-            )
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                lineHeight = 17.sp
-            )
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = status,
-                color = if (enabled) Color(0xFF1FA866) else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Switch(
-                checked = enabled,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = YapePurple
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun VoiceRepeatRow(
-    title: String,
-    subtitle: String,
-    repeatCount: Int,
-    onSelect: (Int) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = title,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp
-        )
-        Text(
-            text = subtitle,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
-            lineHeight = 17.sp
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            (1..3).forEach { option ->
-                RepeatOptionChip(
-                    modifier = Modifier.weight(1f),
-                    text = if (option == 1) {
-                        "1 vez"
-                    } else {
-                        "$option veces"
+                VoiceControlSlider(
+                    label = "Velocidad",
+                    value = speechRate,
+                    onValueChange = { 
+                        speechRate = it
+                        SessionManager.setTtsSpeechRate(context, it)
+                        engine?.let { e -> applyVoiceConfig(e, selectedVoiceName, speechRate, speechPitch) }
                     },
-                    selected = repeatCount == option,
-                    onClick = { onSelect(option) }
+                    valueRange = 0.5f..1.5f,
+                    valueLabel = String.format(Locale.US, "%.1fx", speechRate),
+                    icon = Icons.Default.Settings
+                )
+                
+                VoiceControlSlider(
+                    label = "Tono (Pitch)",
+                    value = speechPitch,
+                    onValueChange = { 
+                        speechPitch = it
+                        SessionManager.setTtsSpeechPitch(context, it)
+                        engine?.let { e -> applyVoiceConfig(e, selectedVoiceName, speechRate, speechPitch) }
+                    },
+                    valueRange = 0.5f..1.15f,
+                    valueLabel = pitchLabel(speechPitch),
+                    icon = Icons.Default.Info
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun RepeatOptionChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = if (selected) YapePurple else Color.White,
-        border = BorderStroke(1.dp, if (selected) YapePurple else Color(0xFFE3DCEB))
-    ) {
-        Box(
-            modifier = Modifier.padding(vertical = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        // --- SECCIÓN 4: SIMULADOR INTERACTIVO ---
+        Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.padding(bottom = 32.dp)) {
             Text(
-                text = text,
-                color = if (selected) Color.White else Color(0xFF96A0AE),
+                text = "Simulador de Pagos",
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                fontSize = 17.sp
             )
-        }
-    }
-}
-
-@Composable
-private fun PreviewVoiceCard(
-    title: String,
-    sampleLine: String,
-    sampleHighlight: String,
-    accent: Color,
-    background: Color,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hablaPagoPressable(interactionSource)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
-        color = background.copy(alpha = 0.78f),
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.15f)),
-        shadowElevation = 2.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.White.copy(alpha = 0.9f)
-                ) {
-                    Text(
-                        text = sampleHighlight,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                        color = accent,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
-
-                HablaPagoIconTile(
-                    icon = Icons.Default.PlayArrow,
-                    tint = accent,
-                    containerColor = Color.White.copy(alpha = 0.92f),
-                    size = AppIconSizes.tileLg,
-                    iconSize = 26.dp,
-                    shape = RoundedCornerShape(16.dp)
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = title,
-                    color = Color(0xFF2F3746),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp
-                )
-                Text(
-                    text = sampleLine,
-                    color = Color(0xFF6E7786),
-                    fontSize = 13.sp,
-                    lineHeight = 19.sp
-                )
-            }
-
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = Color.White.copy(alpha = 0.88f)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        repeat(3) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .width(if (index == 1) 18.dp else 10.dp)
-                                    .height(6.dp)
-                                    .background(
-                                        color = accent.copy(alpha = if (index == 1) 0.9f else 0.5f),
-                                        shape = RoundedCornerShape(50)
-                                    )
+            
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ModernSimulationCard(
+                    modifier = Modifier.weight(1f),
+                    appName = "Yape",
+                    accent = Color(0xFFB46BF6),
+                    icon = R.drawable.ic_nav_payments,
+                    onClick = {
+                        engine?.let {
+                            applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch)
+                            it.speak(
+                                buildPreviewMessage("Yape", "Micaela", "doce soles con cincuenta céntimos", amountOnly),
+                                TextToSpeech.QUEUE_FLUSH, null, "v_y"
                             )
                         }
                     }
-                    Text(
-                        text = stringResource(R.string.voice_preview_cta),
-                        color = accent,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 12.sp
-                    )
-                }
+                )
+                ModernSimulationCard(
+                    modifier = Modifier.weight(1f),
+                    appName = "Plin",
+                    accent = Color(0xFF34B7D7),
+                    icon = R.drawable.ic_nav_payments,
+                    onClick = {
+                        engine?.let {
+                            applyVoiceConfig(it, selectedVoiceName, speechRate, speechPitch)
+                            it.speak(
+                                buildPreviewMessage("Plin", "Roberto", "cinco soles con veinte céntimos", amountOnly),
+                                TextToSpeech.QUEUE_FLUSH, null, "v_p"
+                            )
+                        }
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun VoicePersonaOptionCard(
+private fun ActiveVoiceImmersiveCard(
+    option: VoiceOption?,
+    onClickTest: () -> Unit
+) {
+    if (option == null) return
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Avatar Gigante con Efecto de Pulsación/Halo
+        Box(contentAlignment = Alignment.Center) {
+            // Halo de fondo animado/difuso
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .background(
+                        Brush.radialGradient(
+                            listOf(option.accentEnd.copy(alpha = 0.2f), Color.Transparent)
+                        ),
+                        CircleShape
+                    )
+            )
+            
+            VoiceAvatar(
+                name = option.title,
+                isFemale = option.avatarUrl == "female",
+                accentStart = option.accentStart,
+                accentEnd = option.accentEnd,
+                modifier = Modifier.size(120.dp)
+            )
+        }
+
+        // Información de la Voz
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = option.title,
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                fontSize = 28.sp,
+                letterSpacing = (-1).sp
+            )
+            Text(
+                text = option.speakingStyle,
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        }
+
+        // Botón de Prueba Flotante
+        Surface(
+            shape = CircleShape,
+            color = option.accentEnd,
+            modifier = Modifier
+                .height(56.dp)
+                .width(180.dp)
+                .hablaPagoPressable(interactionSource)
+                .clickable(interactionSource = interactionSource, indication = null, onClick = onClickTest),
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.PlayArrow, null, tint = Color.White)
+                Spacer(Modifier.width(8.dp))
+                Text("Escuchar Voz", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModernVoiceThumbnail(
     option: VoiceOption,
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) Color(0xFFF2E8FF) else Color.White,
+        shape = RoundedCornerShape(24.dp),
+        color = if (selected) option.accentEnd.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.04f),
         border = BorderStroke(
-            1.dp,
-            if (selected) option.accentEnd else Color(0xFFE6DFF0)
-        )
+            if (selected) 2.dp else 1.dp,
+            if (selected) option.accentEnd else Color.White.copy(alpha = 0.08f)
+        ),
+        modifier = Modifier
+            .width(110.dp)
+            .height(130.dp)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             VoiceAvatar(
                 name = option.title,
+                isFemale = option.avatarUrl == "female",
                 accentStart = option.accentStart,
                 accentEnd = option.accentEnd,
-                modifier = Modifier.size(58.dp)
+                modifier = Modifier.size(48.dp)
             )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = option.title,
+                color = Color.White,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = option.subtitle,
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 10.sp,
+                maxLines = 1
+            )
+        }
+    }
+}
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp, end = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = option.title,
-                    color = Color(0xFF2E3444),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = option.subtitle,
-                    color = Color(0xFF7C8594),
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp
-                )
-                Text(
-                    text = option.speakingStyle,
-                    color = Color(0xFF5E6675),
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp
-                )
-            }
+@Composable
+private fun ModernSimulationCard(
+    modifier: Modifier = Modifier,
+    appName: String,
+    accent: Color,
+    icon: Int,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = accent.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.15f)),
+        modifier = modifier
+            .height(100.dp)
+            .hablaPagoPressable(interactionSource)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = appName,
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp
+            )
+        }
+    }
+}
 
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = if (selected) option.accentEnd else Color(0xFFF4EFFA)
+@Composable
+private fun VoiceControlSlider(
+    label: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    valueLabel: String,
+    icon: ImageVector
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.05f),
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
                 Text(
-                    text = if (selected) stringResource(R.string.voice_option_selected) else stringResource(R.string.voice_option_choose),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                    color = if (selected) Color.White else Color(0xFF6A7180),
+                    text = label,
+                    color = Color.White.copy(alpha = 0.8f),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp
+                    fontSize = 14.sp
                 )
             }
+            Text(
+                text = valueLabel,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp
+            )
+        }
+        
+        Box(contentAlignment = Alignment.Center) {
+            // Track background con glow sutil
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
+            )
+            
+            Slider(
+                value = value,
+                onValueChange = onValueChange,
+                valueRange = valueRange,
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = Color.Transparent
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -873,111 +649,54 @@ private fun VoicePersonaOptionCard(
 @Composable
 private fun VoiceAvatar(
     name: String,
+    isFemale: Boolean,
     accentStart: Color,
     accentEnd: Color,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier,
-        shape = CircleShape,
-        color = Color.Transparent
+    val brush = Brush.linearGradient(listOf(accentStart, accentEnd))
+    
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.04f))
+            .border(2.dp, brush, CircleShape),
+        contentAlignment = Alignment.Center
     ) {
+        // Fondo con gradiente sutil
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(accentStart, accentEnd)))
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 9.dp)
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.88f))
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 7.dp)
-                    .width(34.dp)
-                    .height(20.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 16.dp,
-                            topEnd = 16.dp,
-                            bottomStart = 10.dp,
-                            bottomEnd = 10.dp
-                        )
-                    )
-                    .background(Color.White.copy(alpha = 0.88f))
-            )
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 2.dp, bottom = 2.dp)
-                    .size(22.dp),
-                shape = CircleShape,
-                color = Color.White
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = name.take(1).uppercase(),
-                        color = accentEnd,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun VoiceSettingsSectionHeader(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = title,
-            color = Color(0xFF232A36),
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 16.sp
+                .alpha(0.15f)
+                .background(brush)
         )
-        Text(
-            text = subtitle,
-            color = Color(0xFF8C95A4),
-            fontSize = 12.sp,
-            lineHeight = 16.sp
+        
+        // Icono de Avatar estilizado usando los recursos creados
+        Icon(
+            painter = painterResource(id = if (isFemale) R.drawable.ic_voice_female else R.drawable.ic_voice_male),
+            contentDescription = name,
+            tint = Color.White,
+            modifier = Modifier.fillMaxSize(0.6f)
         )
     }
 }
 
-@Composable
-private fun VoicePanelDivider(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color(0xFFECE5F3))
-    )
-}
+private fun voicePersonaFor(localeLabel: String, voiceName: String, index: Int): VoicePersona {
+    val descriptor = "$voiceName $localeLabel".lowercase(Locale.ROOT)
+    val isFemale = listOf("female", "mujer", "femenina", " f", "clara", "lucia", "1-", "3-").any { descriptor.contains(it) } 
+        || (!listOf("male", "hombre", "masculino", " m", "diego", "sergio", "2-", "4-").any { descriptor.contains(it) } && index % 2 == 0)
 
-private fun buildPreviewMessage(
-    appName: String,
-    sender: String,
-    naturalAmount: String,
-    amountOnly: Boolean
-): String {
-    if (amountOnly) {
-        return "Pago de $naturalAmount por $appName."
+    val names = if (isFemale) {
+        listOf("Valeria", "Clara", "Lucía", "Elena", "Camila", "Sofía", "Martina", "Valentina")
+    } else {
+        listOf("Sergio", "Diego", "Mateo", "Bruno", "Álvaro", "Lucas", "Martín", "Hugo")
     }
 
-    return "$sender te ha enviado un pago de $naturalAmount por $appName."
+    val style = if (isFemale) "Voz cálida, ágil y muy amable." else "Suena directo, confiable y con energía."
+    val colorStart = if (isFemale) Color(0xFFC43E94) else Color(0xFF11627A)
+    val colorEnd = if (isFemale) Color(0xFFF07DA0) else Color(0xFF28B7BA)
+
+    return VoicePersona(names[(index - 1).mod(names.size)], style, colorStart, colorEnd, isFemale)
 }
 
 private fun buildVoiceOptions(voices: Set<Voice>): List<VoiceOption> {
@@ -1001,33 +720,21 @@ private fun buildVoiceOptions(voices: Set<Voice>): List<VoiceOption> {
                 subtitle = localeLabel,
                 speakingStyle = persona.speakingStyle,
                 accentStart = persona.accentStart,
-                accentEnd = persona.accentEnd
+                accentEnd = persona.accentEnd,
+                avatarUrl = if (persona.isFemale) "female" else "male"
             )
         }
 }
-
-private fun voicePersonaFor(localeLabel: String, voiceName: String, index: Int): VoicePersona {
-    val descriptor = "$voiceName $localeLabel".lowercase(Locale.ROOT)
-    val pool = when {
-        descriptor.contains("peninsular") || descriptor.contains("espa") -> listOf(
-            VoicePersona("Sergio", "Habla firme, clara y con ritmo pausado.", Color(0xFF4958C7), Color(0xFF7D63E8)),
-            VoicePersona("Clara", "Suena elegante, cercana y muy nítida.", Color(0xFFB14D8C), Color(0xFFE36CA8)),
-            VoicePersona("Álvaro", "Tiene una presencia seria y segura.", Color(0xFF2F6F9E), Color(0xFF4DA6C8))
-        )
-        descriptor.contains("mex") -> listOf(
-            VoicePersona("Valeria", "Habla cálida, ágil y muy amable.", Color(0xFFAF5C2C), Color(0xFFE89C49)),
-            VoicePersona("Diego", "Suena directo, confiable y con energía.", Color(0xFF11627A), Color(0xFF28B7BA)),
-            VoicePersona("Camila", "Tiene un tono dulce y muy claro.", Color(0xFF8240A8), Color(0xFFC86CE5))
-        )
-        else -> listOf(
-            VoicePersona("Mateo", "Suena grave, clara y con buena presencia.", Color(0xFF5D37A6), Color(0xFF9B5DE5)),
-            VoicePersona("Lucía", "Habla suave, cercana y muy natural.", Color(0xFFCB4F78), Color(0xFFF07DA0)),
-            VoicePersona("Bruno", "Tiene un estilo firme y pausado.", Color(0xFF1A6E6D), Color(0xFF2EC4B6)),
-            VoicePersona("Elena", "Suena amable, limpia y profesional.", Color(0xFF4C57C5), Color(0xFF8A7BFF))
-        )
+private fun buildPreviewMessage(
+    appName: String,
+    sender: String,
+    naturalAmount: String,
+    amountOnly: Boolean
+): String {
+    if (amountOnly) {
+        return "Pago de $naturalAmount por $appName."
     }
-
-    return pool[(index - 1).mod(pool.size)]
+    return "$sender te ha enviado un pago de $naturalAmount por $appName."
 }
 
 private fun friendlyLocaleLabel(locale: Locale?): String {

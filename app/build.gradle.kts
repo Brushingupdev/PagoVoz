@@ -28,8 +28,8 @@ android {
         applicationId = "com.example.pagovoz"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.0.6"
+        versionCode = 8
+        versionName = "1.0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -111,6 +111,9 @@ dependencies {
     implementation(libs.supabase.kt)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.android)
+    
+    // Coil
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")

@@ -74,7 +74,7 @@ fun PremiumStatusScreen(
     BackHandler { onBack() }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color(0xFF090B10),
         bottomBar = {
             DashboardBottomBar(selectedTab = DashboardTab.Premium) { tab ->
                 when (tab) {
@@ -95,9 +95,10 @@ fun PremiumStatusScreen(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.background,
-                            AppColors.BackgroundAccent,
-                            MaterialTheme.colorScheme.background
+                            Color(0xFF090B10),
+                            Color(0xFF161224),
+                            Color(0xFF0F1820),
+                            Color(0xFF090B10)
                         )
                     )
                 )
@@ -163,7 +164,7 @@ fun PremiumStatusScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         PremiumMetricCard(
@@ -180,8 +181,8 @@ fun PremiumStatusScreen(
                 }
 
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
                     PremiumReferenceBenefitItem("Reportes ilimitados")
                     PremiumReferenceBenefitItem("Envío por WhatsApp")
@@ -220,17 +221,28 @@ fun PremiumStatusScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         onClick = onShowReports,
+                        contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
+                            containerColor = Color.Transparent,
                         ),
                         shape = RoundedCornerShape(18.dp)
                     ) {
-                        Text(
-                            text = "Abrir reportes",
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(MaterialTheme.colorScheme.primary, AppColors.PlinCyan)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Abrir reportes",
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
                     }
 
                     Button(
@@ -271,7 +283,7 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color(0xFF090B10)
     ) { padding ->
         BoxWithConstraints(
             modifier = Modifier
@@ -281,9 +293,10 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.background,
-                            AppColors.BackgroundAccent,
-                            MaterialTheme.colorScheme.background
+                            Color(0xFF090B10),
+                            Color(0xFF161224),
+                            Color(0xFF0F1820),
+                            Color(0xFF090B10)
                         )
                     )
                 )
@@ -331,11 +344,17 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
                         textAlign = TextAlign.Center
                     )
 
-                    PremiumReferenceBenefitItem("Voz ilimitada")
-                    PremiumReferenceBenefitItem("Reportes avanzados")
-                    PremiumReferenceBenefitItem("Sin anuncios")
-                    PremiumReferenceBenefitItem("Transferencias rápidas")
-                    PremiumReferenceBenefitItem("Soporte prioritario")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        PremiumReferenceBenefitItem("Voz ilimitada")
+                        PremiumReferenceBenefitItem("Reportes avanzados")
+                        PremiumReferenceBenefitItem("Sin anuncios")
+                        PremiumReferenceBenefitItem("Transferencias rápidas")
+                        PremiumReferenceBenefitItem("Soporte prioritario")
+                    }
                 }
 
                 Row(
@@ -345,15 +364,15 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
                     PremiumPlanCard(
                         modifier = Modifier.weight(1f),
                         title = "Mensual",
-                        price = "S/ 9.90",
+                        price = "S/ 5.50",
                         supporting = null,
                         highlighted = false
                     )
                     PremiumPlanCard(
                         modifier = Modifier.weight(1f),
                         title = "Anual",
-                        price = "S/ 89",
-                        supporting = "Mejor valor",
+                        price = "S/ 49",
+                        supporting = "Ahorra 25%",
                         highlighted = true
                     )
                 }
@@ -363,27 +382,40 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .height(58.dp),
                     onClick = openWhatsApp,
+                    contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        containerColor = Color.Transparent,
                     ),
                     shape = RoundedCornerShape(18.dp)
                 ) {
-                    Text(
-                        text = "Activar Ahora",
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(MaterialTheme.colorScheme.primary, AppColors.PlinCyan)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Activar Ahora",
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                    }
                 }
 
                 Text(
-                    text = stringResource(R.string.premium_contact_whatsapp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "Quizás más tarde",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.labelLarge,
                     textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = openWhatsApp)
+                        .clickable(onClick = onBack)
+                        .padding(vertical = 12.dp)
                 )
             }
         }
@@ -393,7 +425,6 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
 @Composable
 private fun PremiumReferenceBenefitItem(label: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -467,9 +498,10 @@ private fun PremiumMinimalHero(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        AppColors.BackgroundAccent,
-                        MaterialTheme.colorScheme.surface
+                        Color(0xFF090B10),
+                        Color(0xFF161224),
+                        Color(0xFF0F1820),
+                        Color(0xFF090B10)
                     )
                 )
             )
@@ -545,24 +577,40 @@ private fun PremiumMinimalHero(
                             .fillMaxWidth()
                             .height(56.dp),
                         onClick = onRequestAccess,
+                        contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
+                            containerColor = Color.Transparent,
                         ),
                         shape = RoundedCornerShape(18.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.premium_request_access),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(MaterialTheme.colorScheme.primary, AppColors.PlinCyan)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.premium_request_access),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -575,23 +623,33 @@ private fun PremiumMetricCard(
     title: String,
     value: String
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
     ) {
-        Text(
-            text = title,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelMedium,
-            lineHeight = 16.sp
-        )
-        Text(
-            text = value,
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleMedium
-        )
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.Center,
+                lineHeight = 16.sp
+            )
+            Text(
+                text = value,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -689,24 +747,40 @@ private fun PremiumMinimalActions(
                 .fillMaxWidth()
                 .height(56.dp),
             onClick = onRequestAccess,
+            contentPadding = PaddingValues(0.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = Color.Transparent,
             ),
             shape = RoundedCornerShape(18.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.premium_request_access),
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(MaterialTheme.colorScheme.primary, AppColors.PlinCyan)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.premium_request_access),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
+            }
         }
 
         Button(

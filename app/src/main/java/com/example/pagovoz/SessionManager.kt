@@ -59,6 +59,7 @@ object SessionManager {
 
     fun setActive(context: Context, active: Boolean) {
         prefs(context).edit().putBoolean(KEY_ACTIVE, active).apply()
+        _updates.tryEmit(Unit)
     }
 
     fun isTrialModalShown(context: Context): Boolean =
@@ -68,15 +69,32 @@ object SessionManager {
         prefs(context).edit().putBoolean(KEY_TRIAL_MODAL_SHOWN, true).apply()
     }
 
-    fun isPremium(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_PREMIUM, false)
+    fun isPremium(context: Context): Boolean {
+        val prefs = prefs(context)
+        val isPremiumSaved = prefs.getBoolean(KEY_PREMIUM, false)
+        if (!isPremiumSaved) return false
+
+        // Validación adicional por fecha para evitar "premium infinito" offline
+        val premiumUntilStr = prefs.getString(KEY_PREMIUM_UNTIL, null) ?: return true // Si no hay fecha pero es premium, asumimos legacy o prueba
+        return try {
+            val expiry = Instant.parse(premiumUntilStr)
+            Instant.now().isBefore(expiry)
+        } catch (_: Exception) {
+            true
+        }
+    }
 
     fun setPremium(context: Context, premium: Boolean, premiumUntil: String? = null) {
         prefs(context).edit().apply {
             putBoolean(KEY_PREMIUM, premium)
-            if (premiumUntil != null) putString(KEY_PREMIUM_UNTIL, premiumUntil) else remove(KEY_PREMIUM_UNTIL)
+            if (premiumUntil != null) {
+                putString(KEY_PREMIUM_UNTIL, premiumUntil)
+            } else if (!premium) {
+                remove(KEY_PREMIUM_UNTIL)
+            }
             putLong(KEY_LAST_PREMIUM_CHECK, System.currentTimeMillis())
         }.apply()
+        _updates.tryEmit(Unit)
     }
 
     fun getPremiumDaysLeft(context: Context): Int {
@@ -403,7 +421,8 @@ object SessionManager {
         val cutoff = today.minusDays(MULTI_DAY_HISTORY_DAYS)
         val raw = decodeHistory(prefs.getString(KEY_MULTI_DAY_HISTORY, "[]") ?: "[]")
         val pruned = raw.filter {
-            Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).toLocalDate() > cutoff
+            val date = Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+            !date.isBefore(cutoff)
         }
         if (pruned.size != raw.size) {
             prefs.edit().putString(KEY_MULTI_DAY_HISTORY, Json.encodeToString(pruned)).apply()

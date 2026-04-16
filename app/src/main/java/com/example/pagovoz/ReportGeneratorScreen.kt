@@ -55,6 +55,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,9 +74,12 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pagovoz.ui.components.HablaPagoIconTile
+import com.example.pagovoz.ui.theme.AppColors
 import com.example.pagovoz.ui.theme.AppElevation
 import com.example.pagovoz.ui.theme.AppRadii
 import com.example.pagovoz.ui.theme.AppSpacing
+import com.example.pagovoz.ui.theme.YapeCyan
+import com.example.pagovoz.ui.theme.YapePurple
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -123,7 +128,7 @@ fun ReportGeneratorScreen(
                 actionContentDescription = stringResource(R.string.history_search_label)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color(0xFF090B10),
         bottomBar = {
             DashboardBottomBar(selectedTab = DashboardTab.Reports) { tab ->
                 when (tab) {
@@ -136,14 +141,28 @@ fun ReportGeneratorScreen(
             }
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF090B10),
+                            Color(0xFF161224),
+                            Color(0xFF0F1820),
+                            Color(0xFF090B10)
+                        )
+                    )
+                )
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
             ReportFiltersSection(
                 selectedRange = uiState.selectedRange,
                 rangeLabel = uiState.reportDate,
@@ -155,26 +174,30 @@ fun ReportGeneratorScreen(
 
             ReportAnalyticsOverview(uiState = uiState)
 
-            ReportPrimaryExportButton(
-                exportMode = exportMode,
-                onClick = {
-                    when (exportMode) {
-                        ReportExportMode.Pdf -> {
-                            val fileName = "Reporte_Pagos_${uiState.selectedRange.fileKey}_${uiState.reportDate.toSafeFileToken()}.pdf"
-                            createDocumentLauncher.launch(fileName)
-                        }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                        ReportExportMode.WhatsApp -> {
-                            sharePdfCustom(context, uiState.reportDate, uiState.reportTotal, uiState.reportHistory)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                ReportExportModeSelector(
+                    selectedMode = exportMode,
+                    onSelect = { exportMode = it }
+                )
+
+                ReportPrimaryExportButton(
+                    exportMode = exportMode,
+                    onClick = {
+                        when (exportMode) {
+                            ReportExportMode.Pdf -> {
+                                val fileName = "Reporte_Pagos_${uiState.selectedRange.fileKey}_${uiState.reportDate.toSafeFileToken()}.pdf"
+                                createDocumentLauncher.launch(fileName)
+                            }
+                            ReportExportMode.WhatsApp -> {
+                                sharePdfCustom(context, uiState.reportDate, uiState.reportTotal, uiState.reportHistory)
+                            }
                         }
                     }
-                }
-            )
-
-            ReportExportModeSelector(
-                selectedMode = exportMode,
-                onSelect = { exportMode = it }
-            )
+                )
+            }
+        }
         }
     }
 }
@@ -191,7 +214,7 @@ private fun ReportFiltersSection(
     rangeNotice: String?,
     onSelect: (ReportRangeFilter) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -216,33 +239,54 @@ private fun ReportFiltersSection(
             )
         }
 
-        Column(
+        Surface(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White.copy(alpha = 0.05f),
+            border = BorderStroke(1.dp, Brush.linearGradient(
+                colors = listOf(Color.White.copy(alpha = 0.12f), Color.Transparent)
+            ))
         ) {
-            Text(
-                text = "Periodo activo",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelLarge
-            )
-            Text(
-                text = rangeLabel,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleLarge
-            )
-            rangeNotice?.let { notice ->
-                Text(
-                    text = notice,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-            )
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Periodo activo",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (rangeNotice != null) {
+                        Surface(
+                            shape = CircleShape,
+                            color = YapeCyan.copy(alpha = 0.15f),
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Text(
+                                text = rangeNotice,
+                                color = YapeCyan,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = rangeLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp
+                )
+            }
         }
     }
 }
@@ -288,13 +332,21 @@ private fun ReportAnalyticsOverview(uiState: ReportsUiState) {
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(26.dp)
     ) {
-        Text(
-            text = "Resumen visual del ${uiState.selectedRange.summaryLabel}",
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.headlineSmall
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = "Análisis de Rendimiento",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Resumen visual del ${uiState.selectedRange.summaryLabel}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
 
         ReportMiniBarChart(
             buckets = buckets,
@@ -315,6 +367,7 @@ private fun ReportMiniBarChart(
     maxAmount: Float,
     selectedRange: ReportRangeFilter
 ) {
+    val iconTint = YapePurple
     val primaryBarColor = MaterialTheme.colorScheme.primary
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -359,27 +412,30 @@ private fun ReportMiniBarChart(
         selectedBucket?.let { bucket ->
             val share = if (totalAmount > 0f) (bucket.total / totalAmount) * 100f else 0f
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f))
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, Brush.linearGradient(
+                    colors = listOf(iconTint.copy(alpha = 0.4f), Color.Transparent)
+                ))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = bucket.label,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.titleSmall
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = "${bucket.detailLabel} · ${bucket.count} cobros",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
                     Column(
@@ -388,12 +444,13 @@ private fun ReportMiniBarChart(
                     ) {
                         Text(
                             text = stringResource(R.string.currency_amount, String.format(Locale.US, "%.2f", bucket.total)),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge
+                            color = iconTint,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold
                         )
                         Text(
                             text = "${share.formatOneDecimal()}% del total",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             style = MaterialTheme.typography.labelSmall
                         )
                     }
@@ -515,15 +572,15 @@ private fun ReportMiniBarChart(
                     drawRoundRect(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                primaryBarColor.copy(alpha = if (selected) 1f else 0.82f),
-                                Color(0xFF4B8FFF).copy(alpha = if (selected) 0.92f else 0.62f)
+                                iconTint.copy(alpha = if (selected) 1f else 0.85f),
+                                YapeCyan.copy(alpha = if (selected) 0.95f else 0.65f)
                             ),
                             startY = topLeft.y,
                             endY = baseY
                         ),
                         topLeft = topLeft,
                         size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f, 14f)
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(100f, 100f) // Ultra redondeado
                     )
 
                     if (selected) {
@@ -690,7 +747,7 @@ private fun ReportTrendLineChart(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = stringResource(R.string.currency_amount, String.format(Locale.US, "%.2f", point.value)),
-                            color = Color(0xFF4B8FFF),
+                            color = AppColors.PlinCyan,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.End
@@ -775,18 +832,29 @@ private fun ReportTrendLineChart(
                     val linePath = Path()
                     val fillPath = Path()
 
-                    pointOffsets.forEachIndexed { index, offset ->
-                        if (index == 0) {
-                            linePath.moveTo(offset.x, offset.y)
-                            fillPath.moveTo(offset.x, baseY)
-                            fillPath.lineTo(offset.x, offset.y)
-                        } else {
-                            linePath.lineTo(offset.x, offset.y)
-                            fillPath.lineTo(offset.x, offset.y)
-                        }
-                    }
-
                     if (pointOffsets.isNotEmpty()) {
+                        fillPath.moveTo(pointOffsets.first().x, baseY)
+                        linePath.moveTo(pointOffsets.first().x, pointOffsets.first().y)
+                        fillPath.lineTo(pointOffsets.first().x, pointOffsets.first().y)
+
+                        if (pointOffsets.size > 1) {
+                            for (i in 0 until pointOffsets.size - 1) {
+                                val p1 = pointOffsets[i]
+                                val p2 = pointOffsets[i + 1]
+                                val conX1 = p1.x + (p2.x - p1.x) / 2f
+                                linePath.cubicTo(
+                                    conX1, p1.y,
+                                    conX1, p2.y,
+                                    p2.x, p2.y
+                                )
+                                fillPath.cubicTo(
+                                    conX1, p1.y,
+                                    conX1, p2.y,
+                                    p2.x, p2.y
+                                )
+                            }
+                        }
+
                         val last = pointOffsets.last()
                         fillPath.lineTo(last.x, baseY)
                         fillPath.close()
@@ -795,7 +863,7 @@ private fun ReportTrendLineChart(
                             path = fillPath,
                             brush = Brush.verticalGradient(
                                 colors = listOf(
-                                    Color(0xFF4B8FFF).copy(alpha = 0.24f),
+                                    YapeCyan.copy(alpha = 0.28f),
                                     Color.Transparent
                                 ),
                                 startY = topPadding,
@@ -807,10 +875,10 @@ private fun ReportTrendLineChart(
                             brush = Brush.horizontalGradient(
                                 colors = listOf(
                                     trendPrimaryColor,
-                                    Color(0xFF4B8FFF)
+                                    YapeCyan
                                 )
                             ),
-                            style = Stroke(width = 4.dp.toPx())
+                            style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                         )
 
                         pointOffsets.forEachIndexed { index, offset ->
@@ -823,7 +891,7 @@ private fun ReportTrendLineChart(
                                 )
                             }
                             drawCircle(
-                                color = if (index == selectedIndex) Color.White else Color(0xFF4B8FFF),
+                                color = if (index == selectedIndex) Color.White else AppColors.PlinCyan,
                                 radius = if (index == selectedIndex) 5.dp.toPx() else 3.5.dp.toPx(),
                                 center = offset
                             )
@@ -919,7 +987,7 @@ private fun ReportFingerTooltip(
 
 @Composable
 private fun ReportMetricCards(uiState: ReportsUiState) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Box(modifier = Modifier.weight(1f)) {
             ReportMetricHighlightCard(
                 iconRes = R.drawable.ic_metric_money,
@@ -943,34 +1011,47 @@ private fun ReportMetricHighlightCard(
     title: String,
     value: String
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White.copy(alpha = 0.04f),
+        border = BorderStroke(1.dp, Brush.linearGradient(
+            colors = listOf(Color.White.copy(alpha = 0.1f), Color.Transparent)
+        ))
     ) {
-        HablaPagoIconTile(
-            iconRes = iconRes,
-            tint = Color(0xFF111111),
-            containerColor = Color.White,
-            size = 42.dp,
-            iconSize = 20.dp,
-            shape = CircleShape
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleMedium,
-                lineHeight = 22.sp
-            )
-            Text(
-                text = value,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 32.sp
-            )
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.08f),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = value,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.4).sp
+                )
+            }
         }
     }
 }
@@ -994,33 +1075,36 @@ private fun ReportPrimaryExportButton(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .height(64.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(30.dp),
-        color = MaterialTheme.colorScheme.primary,
-        shadowElevation = AppElevation.md
+        shape = RoundedCornerShape(20.dp),
+        color = Color.Transparent
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 22.dp, vertical = 20.dp)
+                .fillMaxSize()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(YapePurple, YapeCyan)
+                    )
+                ),
+            contentAlignment = Alignment.Center
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(22.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = buttonLabel,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -1036,22 +1120,29 @@ private fun ReportExportModeSelector(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            shape = RoundedCornerShape(AppRadii.pill),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
         ) {
-            ReportModeChip(
-                label = "PDF",
-                iconRes = R.drawable.ic_benefit_pdf,
-                selected = selectedMode == ReportExportMode.Pdf,
-                onClick = { onSelect(ReportExportMode.Pdf) }
-            )
-            ReportModeChip(
-                label = "WhatsApp",
-                iconRes = R.drawable.ic_benefit_whatsapp,
-                selected = selectedMode == ReportExportMode.WhatsApp,
-                onClick = { onSelect(ReportExportMode.WhatsApp) }
-            )
+            Row(
+                modifier = Modifier.padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ReportModeChip(
+                    label = "PDF",
+                    iconRes = R.drawable.ic_benefit_pdf,
+                    selected = selectedMode == ReportExportMode.Pdf,
+                    onClick = { onSelect(ReportExportMode.Pdf) }
+                )
+                ReportModeChip(
+                    label = "WhatsApp",
+                    iconRes = R.drawable.ic_benefit_whatsapp,
+                    selected = selectedMode == ReportExportMode.WhatsApp,
+                    onClick = { onSelect(ReportExportMode.WhatsApp) }
+                )
+            }
         }
     }
 }
@@ -1066,27 +1157,24 @@ private fun ReportModeChip(
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(AppRadii.pill),
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.75f)
-        )
+        color = if (selected) MaterialTheme.colorScheme.surface else Color.Transparent
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)
             )
             Text(
                 text = label,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelLarge
+                color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
             )
         }
     }

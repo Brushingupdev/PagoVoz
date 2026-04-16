@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.example.pagovoz.ui.components.hablaPagoPressable
+import com.example.pagovoz.ui.theme.AppColors
+import com.example.pagovoz.ui.theme.AppRadii
 import com.example.pagovoz.ui.theme.AppSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +76,7 @@ fun ProfileScreen(
                 onBack = onBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color(0xFF090B10),
         bottomBar = {
             DashboardBottomBar(selectedTab = DashboardTab.Premium) { tab ->
                 when (tab) {
@@ -91,9 +93,19 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF090B10),
+                            Color(0xFF161224),
+                            Color(0xFF0F1820),
+                            Color(0xFF090B10)
+                        )
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 20.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
+            verticalArrangement = Arrangement.spacedBy(26.dp)
         ) {
             ProfileOverviewSection(
                 isPremium = isPremium,
@@ -130,101 +142,111 @@ private fun ProfileOverviewSection(
     serviceActive: Boolean,
     currentVoice: String
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(AppRadii.lg),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (isPremium) {
-                        stringResource(R.string.profile_badge_premium)
-                    } else {
-                        stringResource(R.string.profile_badge_basic)
-                    }.uppercase(),
-                    color = if (isPremium) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    letterSpacing = 0.9.sp
-                )
-
-                Text(
-                    text = stringResource(R.string.profile_merchant_title),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold)
-                )
-
-                Text(
-                    text = if (isPremium) {
-                        if (trialDays > 0) {
-                            stringResource(R.string.profile_status_trial, trialDays)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = if (isPremium) {
+                            stringResource(R.string.profile_badge_premium)
                         } else {
-                            stringResource(R.string.profile_status_premium)
-                        }
-                    } else {
-                        stringResource(R.string.profile_status_free)
-                    },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge,
-                    lineHeight = 24.sp
-                )
-            }
+                            stringResource(R.string.profile_badge_basic)
+                        }.uppercase(),
+                        color = if (isPremium) AppColors.PlinCyan else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        letterSpacing = 0.9.sp
+                    )
 
-            Box(
-                modifier = Modifier
-                    .padding(start = 16.dp)
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
+                    Text(
+                        text = stringResource(R.string.profile_merchant_title),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold)
+                    )
 
-        Text(
-            text = stringResource(R.string.profile_hero_supporting),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium,
-            lineHeight = 21.sp
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ProfileOverviewLine(
-                label = stringResource(R.string.profile_metric_plan),
-                value = if (isPremium) {
-                    stringResource(R.string.profile_metric_pro)
-                } else {
-                    stringResource(R.string.profile_metric_basic)
+                    Text(
+                        text = if (isPremium) {
+                            if (trialDays > 0) {
+                                stringResource(R.string.profile_status_trial, trialDays)
+                            } else {
+                                stringResource(R.string.profile_status_premium)
+                            }
+                        } else {
+                            stringResource(R.string.profile_status_free)
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 24.sp
+                    )
                 }
+
+                Box(
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                colors = listOf(MaterialTheme.colorScheme.primary, AppColors.PlinCyan)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.profile_hero_supporting),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 21.sp
             )
-            ProfileInfoDivider()
-            ProfileOverviewLine(
-                label = stringResource(R.string.profile_metric_service),
-                value = if (serviceActive) {
-                    stringResource(R.string.profile_metric_active)
-                } else {
-                    stringResource(R.string.profile_metric_inactive)
-                },
-                accent = if (serviceActive) Color(0xFF1FA866) else MaterialTheme.colorScheme.error
-            )
-            ProfileInfoDivider()
-            ProfileOverviewLine(
-                label = stringResource(R.string.profile_voice_label),
-                value = currentVoice,
-                allowWrap = true
-            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProfileOverviewLine(
+                    label = stringResource(R.string.profile_metric_plan),
+                    value = if (isPremium) {
+                        stringResource(R.string.profile_metric_pro)
+                    } else {
+                        stringResource(R.string.profile_metric_basic)
+                    }
+                )
+                ProfileInfoDivider()
+                ProfileOverviewLine(
+                    label = stringResource(R.string.profile_metric_service),
+                    value = if (serviceActive) {
+                        stringResource(R.string.profile_metric_active)
+                    } else {
+                        stringResource(R.string.profile_metric_inactive)
+                    },
+                    accent = if (serviceActive) AppColors.PlinCyan else MaterialTheme.colorScheme.error
+                )
+                ProfileInfoDivider()
+                ProfileOverviewLine(
+                    label = stringResource(R.string.profile_voice_label),
+                    value = currentVoice,
+                    allowWrap = true
+                )
+            }
         }
     }
 }
@@ -268,53 +290,59 @@ private fun ProfileActionSection(
     onShowVoiceSettings: () -> Unit,
     onSupport: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(AppRadii.lg),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
     ) {
-        ProfileActionRow(
-            eyebrow = stringResource(R.string.profile_action_plan_label),
-            icon = Icons.Default.Star,
-            iconTint = Color(0xFFC98716),
-            title = stringResource(R.string.profile_plan_title),
-            subtitle = if (isPremium) {
-                stringResource(R.string.profile_plan_active)
-            } else {
-                stringResource(R.string.profile_plan_inactive)
-            },
-            actionLabel = if (isPremium) {
-                stringResource(R.string.profile_plan_manage)
-            } else {
-                stringResource(R.string.profile_plan_upgrade)
-            },
-            onClick = onShowPremium
-        )
-        ProfileInfoDivider()
-        ProfileActionRow(
-            eyebrow = stringResource(R.string.profile_action_voice_label),
-            icon = Icons.Default.Settings,
-            iconTint = MaterialTheme.colorScheme.primary,
-            title = stringResource(R.string.profile_voice_title),
-            subtitle = stringResource(R.string.profile_voice_subtitle, selectedVoice),
-            actionLabel = if (isPremium) {
-                stringResource(R.string.profile_voice_open)
-            } else {
-                stringResource(R.string.profile_plan_upgrade)
-            },
-            onClick = {
-                if (isPremium) onShowVoiceSettings() else onShowPremium()
-            }
-        )
-        ProfileInfoDivider()
-        ProfileActionRow(
-            eyebrow = stringResource(R.string.profile_action_support_label),
-            icon = Icons.Default.Info,
-            iconTint = Color(0xFF2A79C8),
-            title = stringResource(R.string.profile_support_title),
-            subtitle = stringResource(R.string.profile_support_subtitle),
-            actionLabel = stringResource(R.string.profile_support_action),
-            onClick = onSupport
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            ProfileActionRow(
+                eyebrow = stringResource(R.string.profile_action_plan_label),
+                icon = Icons.Default.Star,
+                iconTint = Color(0xFFC98716),
+                title = stringResource(R.string.profile_plan_title),
+                subtitle = if (isPremium) {
+                    stringResource(R.string.profile_plan_active)
+                } else {
+                    stringResource(R.string.profile_plan_inactive)
+                },
+                actionLabel = if (isPremium) {
+                    stringResource(R.string.profile_plan_manage)
+                } else {
+                    stringResource(R.string.profile_plan_upgrade)
+                },
+                onClick = onShowPremium
+            )
+            ProfileInfoDivider()
+            ProfileActionRow(
+                eyebrow = stringResource(R.string.profile_action_voice_label),
+                icon = Icons.Default.Settings,
+                iconTint = AppColors.PlinCyan,
+                title = stringResource(R.string.profile_voice_title),
+                subtitle = stringResource(R.string.profile_voice_subtitle, selectedVoice),
+                actionLabel = if (isPremium) {
+                    stringResource(R.string.profile_voice_open)
+                } else {
+                    stringResource(R.string.profile_plan_upgrade)
+                },
+                onClick = {
+                    if (isPremium) onShowVoiceSettings() else onShowPremium()
+                }
+            )
+            ProfileInfoDivider()
+            ProfileActionRow(
+                eyebrow = stringResource(R.string.profile_action_support_label),
+                icon = Icons.Default.Info,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = stringResource(R.string.profile_support_title),
+                subtitle = stringResource(R.string.profile_support_subtitle),
+                actionLabel = stringResource(R.string.profile_support_action),
+                onClick = onSupport
+            )
+        }
     }
 }
 
@@ -332,20 +360,31 @@ private fun ProfileDeviceSection(
             subtitle = stringResource(R.string.profile_device_hint)
         )
 
-        ProfileInfoRow(
-            label = stringResource(R.string.profile_device_label),
-            value = deviceLabel
-        )
-        ProfileInfoDivider()
-        ProfileInfoRow(
-            label = stringResource(R.string.profile_listener_label),
-            value = if (serviceActive) {
-                stringResource(R.string.profile_listener_active)
-            } else {
-                stringResource(R.string.profile_listener_inactive)
-            },
-            accent = if (serviceActive) Color(0xFF1FA866) else MaterialTheme.colorScheme.error
-        )
+        androidx.compose.material3.Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(AppRadii.lg),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                ProfileInfoRow(
+                    label = stringResource(R.string.profile_device_label),
+                    value = deviceLabel
+                )
+                ProfileInfoDivider()
+                ProfileInfoRow(
+                    label = stringResource(R.string.profile_listener_label),
+                    value = if (serviceActive) {
+                        stringResource(R.string.profile_listener_active)
+                    } else {
+                        stringResource(R.string.profile_listener_inactive)
+                    },
+                    accent = if (serviceActive) AppColors.PlinCyan else MaterialTheme.colorScheme.error
+                )
+            }
+        }
     }
 }
 

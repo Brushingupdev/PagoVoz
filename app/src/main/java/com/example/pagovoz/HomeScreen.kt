@@ -75,6 +75,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pagovoz.ui.theme.YapeCyan
 import com.example.pagovoz.ui.theme.YapePurple
 import java.util.Locale
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+
 
 fun isBatteryOptimizationDisabled(context: Context): Boolean {
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -140,7 +144,15 @@ fun HomeScreen(
     onShowProfile: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var isBatteryOptimizationOff by remember { mutableStateOf(isBatteryOptimizationDisabled(context)) }
+    var isWidgetPinned by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        isWidgetPinned = GlanceAppWidgetManager(context).getGlanceIds(PagoGlanceWidget::class.java).isNotEmpty()
+    }
+
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(
             sessionRepository = defaultSessionRepository(context),
@@ -156,6 +168,10 @@ fun HomeScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.onResume()
                 isBatteryOptimizationOff = isBatteryOptimizationDisabled(context)
+                scope.launch {
+                    isWidgetPinned = GlanceAppWidgetManager(context).getGlanceIds(PagoGlanceWidget::class.java).isNotEmpty()
+                }
+
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -264,6 +280,13 @@ fun HomeScreen(
                     payments = uiState.recentPayments,
                     onViewAll = onShowRecentHistory,
                     onPaymentClick = onShowRecentHistory
+                )
+            }
+
+            item {
+                HomeWidgetPinCard(
+                    isPinned = isWidgetPinned,
+                    onClick = { PagoGlanceWidget.requestPin(context) }
                 )
             }
 
