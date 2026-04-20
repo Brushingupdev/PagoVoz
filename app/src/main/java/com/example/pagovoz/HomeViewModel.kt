@@ -50,7 +50,7 @@ class HomeViewModel(
                 dailyCount = sessionRepository.getDailyCount(),
                 recentPayments = sessionRepository.getPaymentHistory()
                     .sortedByDescending { payment -> payment.timestamp }
-                    .take(3),
+                    .take(4),
                 showTrialModal = !sessionRepository.isTrialModalShown(),
                 isPremium = sessionRepository.isPremium(),
                 trialDays = sessionRepository.getPremiumDaysLeft()

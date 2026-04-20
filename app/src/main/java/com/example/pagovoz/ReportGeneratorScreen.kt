@@ -1222,6 +1222,13 @@ private fun buildReportTimeBuckets(
 private fun buildTodayTimeBuckets(history: List<PaymentRecord>): List<ReportTimeBucket> {
     val ranges = listOf(
         ReportTimeRange(
+            label = "Madrugada",
+            detailLabel = "12 a.m. - 6 a.m.",
+            shortLabel = "12-6a",
+            startHour = 0,
+            endHourExclusive = 6
+        ),
+        ReportTimeRange(
             label = "Temprano",
             detailLabel = "6 a.m. - 9 a.m.",
             shortLabel = "6-9a",

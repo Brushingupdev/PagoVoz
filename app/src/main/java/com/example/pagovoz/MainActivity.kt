@@ -27,6 +27,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ListenerHeartbeatScheduler.schedule(this)
+        ListenerDiagnostics.markRebindAttempt(this, forceToggle = false, reason = "main_create")
         NotificationListenerHelper.requestRebind(this, forceToggle = false)
         enableEdgeToEdge()
 
@@ -88,6 +90,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        ListenerHeartbeatScheduler.schedule(this)
+        ListenerDiagnostics.markRebindAttempt(this, forceToggle = false, reason = "main_resume")
         NotificationListenerHelper.requestRebind(this, forceToggle = false)
     }
 

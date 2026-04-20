@@ -15,6 +15,9 @@ import android.util.Log
 import java.util.Locale
 
 class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnInitListener {
+    companion object {
+        private const val MAX_PENDING_ANNOUNCEMENTS = 100
+    }
 
     private lateinit var tts: TextToSpeech
     private var ttsReady = false
@@ -29,18 +32,22 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
     override fun onCreate() {
         super.onCreate()
+        ListenerDiagnostics.markListenerCreated(this)
         logDebug("Servicio creado")
         ensureTtsInitialized()
     }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        ListenerDiagnostics.markListenerConnected(this)
         logDebug("Notification listener conectado")
         ensureTtsInitialized()
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
+        ListenerDiagnostics.markListenerDisconnected(this, "listener_callback")
+        ListenerDiagnostics.markRebindAttempt(this, forceToggle = false, reason = "listener_disconnected")
         logDebug("Notification listener desconectado; solicitando rebind")
         ttsReady = false
         NotificationListenerHelper.requestRebind(this)
@@ -49,6 +56,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             ttsReady = true
+            ListenerDiagnostics.markTtsReady(this)
             tts.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
@@ -69,6 +77,8 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             applySpeechSettings()
             flushPendingAnnouncementsAfterTtsReady()
             logDebug("TTS inicializado")
+        } else {
+            ListenerDiagnostics.markTtsError(this, "init_status_$status")
         }
     }
 
@@ -76,13 +86,17 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         if (!SessionManager.isActive(this)) return
 
         val packageName = sbn.packageName
+        ListenerDiagnostics.markNotificationReceived(this, packageName)
         val fullText = buildNotificationText(sbn.notification)
         val extras = sbn.notification.extras
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
         val bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
 
-        if (!PaymentNotificationParser.shouldInspect(packageName, fullText)) return
+        if (!PaymentNotificationParser.shouldInspect(packageName, fullText)) {
+            ListenerDiagnostics.markPaymentIgnored(this, packageName, "filtered_before_parse")
+            return
+        }
 
         val uniqueKey = "${packageName}_${sbn.postTime}_${sbn.id}"
         if (recentNotifications.contains(uniqueKey)) return
@@ -91,6 +105,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
         val parsed = PaymentNotificationParser.parse(packageName, fullText)
         if (parsed == null) {
+            ListenerDiagnostics.markPaymentIgnored(this, packageName, "parse_null")
             logDebug(
                 "No se reconocio un formato de pago compatible para $packageName. " +
                     "title='$title' text='$text' bigText='$bigText' fullText='$fullText'"
@@ -99,8 +114,8 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         }
 
         logDebug("Pago detectado desde $packageName")
+        ListenerDiagnostics.markPaymentCaptured(this, packageName, parsed.amount, parsed.sender)
         SessionManager.addPayment(this, parsed.amount, parsed.sender)
-        PagoGlanceWidget.updateAll(this)
 
         val appName = resolvePaymentAppName(packageName, fullText)
         val naturalAmount = convertAmountToNatural(parsed.amount)
@@ -154,6 +169,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     }
 
     override fun onDestroy() {
+        ListenerDiagnostics.markListenerDisconnected(this, "service_destroyed")
         if (::tts.isInitialized) {
             synchronized(speechLock) {
                 pendingAnnouncements.clear()
@@ -329,8 +345,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
                 return
             }
 
-            // Cola total de 3 anuncios: 1 sonando + 2 pendientes.
-            if (pendingAnnouncements.size >= 2) {
+            if (pendingAnnouncements.size >= MAX_PENDING_ANNOUNCEMENTS) {
                 pendingAnnouncements.removeFirst()
             }
             pendingAnnouncements.addLast(repeatedMessage)
@@ -339,7 +354,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
     private fun enqueuePendingAnnouncement(message: String) {
         synchronized(speechLock) {
-            if (pendingAnnouncementsBeforeTts.size >= 3) {
+            if (pendingAnnouncementsBeforeTts.size >= MAX_PENDING_ANNOUNCEMENTS) {
                 pendingAnnouncementsBeforeTts.removeFirst()
             }
             pendingAnnouncementsBeforeTts.addLast(message)
@@ -376,6 +391,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         }
         val result = tts.speak(message, TextToSpeech.QUEUE_FLUSH, speakParams, "pago_id_$utteranceCounter")
         if (result == TextToSpeech.ERROR) {
+            ListenerDiagnostics.markTtsError(this, "speak_error")
             logDebug("TTS devolvió ERROR al intentar anunciar el pago")
             isSpeakingAnnouncement = false
             abandonSpeechAudioFocus()

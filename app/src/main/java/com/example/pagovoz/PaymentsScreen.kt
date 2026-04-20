@@ -64,7 +64,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pagovoz.ui.components.HablaPagoChevron
 import com.example.pagovoz.ui.components.HablaPagoIconTile
 import com.example.pagovoz.ui.theme.AppColors
 import com.example.pagovoz.ui.theme.AppElevation
@@ -155,14 +154,14 @@ fun PaymentsScreen(
                     )
                 }
 
-                if (payments.size > 1) {
+                if (payments.isNotEmpty()) {
                     item {
                         DashboardSectionHeader(
                             title = stringResource(R.string.payments_feed_title)
                         )
                     }
                     item {
-                        LiveFeedSection(records = payments.drop(1).take(10))
+                        LiveFeedSection(records = payments.take(10))
                     }
                 }
             }
@@ -1026,10 +1025,7 @@ private fun PaymentsMetricsDivider() {
 private fun LiveFeedSection(records: List<PaymentRecord>) {
     Column {
         records.forEachIndexed { index, record ->
-            LiveFeedRow(
-                record = record,
-                highlight = index == 0
-            )
+            LiveFeedRow(record = record)
             if (index != records.lastIndex) {
                 Box(
                     modifier = Modifier
@@ -1044,8 +1040,7 @@ private fun LiveFeedSection(records: List<PaymentRecord>) {
 
 @Composable
 private fun LiveFeedRow(
-    record: PaymentRecord,
-    highlight: Boolean
+    record: PaymentRecord
 ) {
     Row(
         modifier = Modifier
@@ -1053,19 +1048,14 @@ private fun LiveFeedRow(
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-            // Ícono con mini radar para highlight, ícono normal para el resto
-            if (highlight) {
-                LiveFeedPulseIcon()
-            } else {
-                HablaPagoIconTile(
-                    iconRes = R.drawable.ic_nav_payments,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    containerColor = YapeCyan.copy(alpha = 0.08f),
-                    size = AppIconSizes.tileSm,
-                    iconSize = AppIconSizes.md,
-                    shape = RoundedCornerShape(14.dp)
-                )
-            }
+            HablaPagoIconTile(
+                iconRes = R.drawable.ic_nav_payments,
+                tint = YapeCyan,
+                containerColor = YapeCyan.copy(alpha = 0.12f),
+                size = AppIconSizes.tileSm,
+                iconSize = AppIconSizes.md,
+                shape = RoundedCornerShape(14.dp)
+            )
 
             Column(
                 modifier = Modifier
@@ -1077,7 +1067,7 @@ private fun LiveFeedRow(
                     text = record.sender,
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (highlight) FontWeight.Bold else FontWeight.Medium
+                    fontWeight = FontWeight.Medium
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1099,7 +1089,7 @@ private fun LiveFeedRow(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = stringResource(R.string.currency_amount, String.format(Locale.US, "%.2f", record.amount)),
-                    color = if (highlight) YapeCyan else Color.White,
+                    color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -1121,57 +1111,6 @@ private fun LiveFeedRow(
                 }
             }
 
-            if (highlight) {
-                Spacer(modifier = Modifier.width(6.dp))
-                HablaPagoChevron(
-                    tint = YapeCyan.copy(alpha = 0.65f),
-                    size = AppIconSizes.sm
-                )
-        }
-    }
-}
-
-@Composable
-private fun LiveFeedPulseIcon() {
-    val transition = rememberInfiniteTransition(label = "feed-pulse")
-    val pulse by transition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "feed-icon-pulse"
-    )
-
-    Box(
-        modifier = Modifier.size(AppIconSizes.tileSm),
-        contentAlignment = Alignment.Center
-    ) {
-        // Glow exterior
-        Box(
-            modifier = Modifier
-                .size(AppIconSizes.tileSm)
-                .scale(1f + (pulse - 0.6f) * 0.5f)
-                .alpha(pulse * 0.3f)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            YapeCyan.copy(alpha = 0.3f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                )
-        )
-        HablaPagoIconTile(
-            iconRes = R.drawable.ic_nav_payments,
-            tint = YapeCyan,
-            containerColor = YapeCyan.copy(alpha = 0.18f),
-            size = AppIconSizes.tileSm,
-            iconSize = AppIconSizes.md,
-            shape = RoundedCornerShape(14.dp)
-        )
     }
 }
 

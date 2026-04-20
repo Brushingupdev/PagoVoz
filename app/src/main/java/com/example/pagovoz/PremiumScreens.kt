@@ -87,7 +87,7 @@ fun PremiumStatusScreen(
             }
         }
     ) { padding ->
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
@@ -285,7 +285,7 @@ fun PremiumInfoScreen(onBack: () -> Unit) {
     Scaffold(
         containerColor = Color(0xFF090B10)
     ) { padding ->
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()

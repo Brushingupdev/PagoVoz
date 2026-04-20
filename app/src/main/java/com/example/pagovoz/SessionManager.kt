@@ -59,6 +59,11 @@ object SessionManager {
 
     fun setActive(context: Context, active: Boolean) {
         prefs(context).edit().putBoolean(KEY_ACTIVE, active).apply()
+        if (active) {
+            ListenerHeartbeatScheduler.schedule(context)
+        } else {
+            ListenerHeartbeatScheduler.cancel(context)
+        }
         _updates.tryEmit(Unit)
     }
 
@@ -175,9 +180,10 @@ object SessionManager {
             .putInt(KEY_TOTAL_COUNT, currentCount + 1)
             .putString(KEY_PAYMENTS_JSON, historyJson)
             .putString(KEY_MULTI_DAY_HISTORY, multiDayJson)
-            .apply()
+            .commit()
 
         _updates.tryEmit(Unit)
+        PagoGlanceWidget.updateAll(context.applicationContext)
     }
 
     fun getPaymentHistory(context: Context): List<PaymentRecord> {

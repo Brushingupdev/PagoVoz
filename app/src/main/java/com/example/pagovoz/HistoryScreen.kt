@@ -306,8 +306,8 @@ private fun HistoryFilterChip(
         label = "history-filter-scale"
     )
 
-        Surface(
-            modifier = modifier
+    Surface(
+        modifier = modifier
             .graphicsLayer {
                 scaleX = selectedScale
                 scaleY = selectedScale
