@@ -1,4 +1,4 @@
-# PagoVoz v1.0.7
+# PagoVoz v1.0.8
 
 Esta version mejora la estabilidad del monitor de cobros, el widget y la vista de reportes.
 
