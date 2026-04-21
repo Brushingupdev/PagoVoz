@@ -61,6 +61,12 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         ensureTtsInitialized()
     }
 
+    override fun onStartCommand(intent: android.content.Intent?, flags: Int, startId: Int): Int {
+        logDebug("onStartCommand: asegurando foreground")
+        startListenerForeground()
+        return START_STICKY
+    }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         ListenerDiagnostics.markListenerConnected(this)

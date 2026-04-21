@@ -34,6 +34,14 @@ object NotificationListenerHelper {
             }
         }
 
+        // Forzar que el servicio se ponga en primer plano (foreground) con su notificacion
+        val intent = android.content.Intent(context, PagoNotificationListener::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+
         if (!forceToggle) return
 
         val packageManager = context.packageManager
