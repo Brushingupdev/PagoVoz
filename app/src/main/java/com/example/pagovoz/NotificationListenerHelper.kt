@@ -23,6 +23,16 @@ object NotificationListenerHelper {
             .any { it == targetComponent }
     }
 
+    fun isAccessibilityServiceEnabled(context: Context): Boolean {
+        val expectedComponentName = ComponentName(context, PagoAccessibilityService::class.java).flattenToString()
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        
+        return enabledServices.split(':').any { it.equals(expectedComponentName, ignoreCase = true) }
+    }
+
     fun requestRebind(context: Context, forceToggle: Boolean = false) {
         if (!isNotificationServiceEnabled(context)) return
 

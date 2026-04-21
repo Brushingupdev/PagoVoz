@@ -437,4 +437,6 @@
     <string name="payments_empty_title">Esperando nuevos cobros</string>
     <string name="payments_empty_subtitle">Cuando HablaPago reciba una notificación válida, la verás aparecer aquí en tiempo real.</string>
     <string name="payments_source_label">Detectado por HablaPago</string>
+    <string name="accessibility_service_label">Detección Secundaria de Pagos (HablaPago)</string>
+    <string name="accessibility_description">Permite a HablaPago detectar pagos cuando las notificaciones fallan o la app de pagos está abierta. No captura datos personales.</string>
 </resources>

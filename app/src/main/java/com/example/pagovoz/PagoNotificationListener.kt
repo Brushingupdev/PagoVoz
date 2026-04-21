@@ -146,24 +146,27 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             }
         }
         logDebug("Pago detectado desde $packageName")
-        ListenerDiagnostics.markPaymentCaptured(this, packageName, parsed.amount, parsed.sender)
-        SessionManager.addPayment(this, parsed.amount, parsed.sender)
-        acquireSpeechWakeLock() // mantener CPU activo para que TTS pueda hablar en Doze mode
+        if (SessionManager.addPayment(this, parsed.amount, parsed.sender)) {
+            ListenerDiagnostics.markPaymentCaptured(this, packageName, parsed.amount, parsed.sender)
+            acquireSpeechWakeLock() // mantener CPU activo para que TTS pueda hablar en Doze mode
 
-        val appName = PaymentSourceResolver.resolveAppName(packageName, fullText)
-        val naturalAmount = convertAmountToNatural(parsed.amount)
-        val message = buildSpeechMessage(
-            appName = appName,
-            sender = parsed.sender,
-            naturalAmount = naturalAmount
-        )
+            val appName = PaymentSourceResolver.resolveAppName(packageName, fullText)
+            val naturalAmount = convertAmountToNatural(parsed.amount)
+            val message = buildSpeechMessage(
+                appName = appName,
+                sender = parsed.sender,
+                naturalAmount = naturalAmount
+            )
 
-        if (ttsReady) {
-            applySpeechSettings()
-            speakWithRepeat(message)
+            if (ttsReady) {
+                applySpeechSettings()
+                speakWithRepeat(message)
+            } else {
+                enqueuePendingAnnouncement(message)
+                logDebug("Anuncio en cola mientras TTS inicializa")
+            }
         } else {
-            enqueuePendingAnnouncement(message)
-            logDebug("Anuncio en cola mientras TTS inicializa")
+            logDebug("Pago duplicado ignorado (ya procesado por otra vía)")
         }
     }
 

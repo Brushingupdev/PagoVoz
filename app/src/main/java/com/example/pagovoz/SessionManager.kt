@@ -156,7 +156,8 @@ object SessionManager {
         PagoGlanceWidget.updateAll(context)
     }
 
-    fun addPayment(context: Context, amount: Double, sender: String) {
+    fun addPayment(context: Context, amount: Double, sender: String): Boolean {
+        if (isDuplicate(context, amount, sender)) return false
         resetIfNewDay(context)
 
         val prefs = prefs(context)
@@ -184,6 +185,7 @@ object SessionManager {
 
         _updates.tryEmit(Unit)
         PagoGlanceWidget.updateAll(context.applicationContext)
+        return true
     }
 
     fun getPaymentHistory(context: Context): List<PaymentRecord> {
@@ -283,7 +285,7 @@ object SessionManager {
 
     fun getTtsSpeechRate(context: Context): Float =
         prefs(context)
-            .getFloat(KEY_TTS_SPEECH_RATE, 1f)
+            .getFloat(KEY_TTS_SPEECH_RATE, 0.85f)
             .coerceIn(0.6f, 1.8f)
 
     fun setTtsSpeechRate(context: Context, rate: Float) {
@@ -295,7 +297,7 @@ object SessionManager {
 
     fun getTtsSpeechPitch(context: Context): Float =
         prefs(context)
-            .getFloat(KEY_TTS_SPEECH_PITCH, 1f)
+            .getFloat(KEY_TTS_SPEECH_PITCH, 0.88f)
             .coerceIn(0.7f, 1.6f)
 
     fun setTtsSpeechPitch(context: Context, pitch: Float) {
@@ -420,4 +422,22 @@ object SessionManager {
 
     private fun PaymentRecord.toLocalDate(): LocalDate =
         Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+
+    /**
+     * Checks if a payment with the same amount and sender was processed in the last 15 seconds.
+     * This prevents double-announcing when captured via both NotificationListener and AccessibilityService.
+     */
+    private fun isDuplicate(context: Context, amount: Double, sender: String): Boolean {
+        val now = System.currentTimeMillis()
+        val history = getPaymentHistory(context)
+        val multiDay = getMultiDayHistory(context)
+        
+        // Check today's history
+        val isMatch = (history + multiDay).any { 
+            it.amount == amount && 
+            it.sender.equals(sender, ignoreCase = true) && 
+            Math.abs(now - it.timestamp) < 15_000L 
+        }
+        return isMatch
+    }
 }
