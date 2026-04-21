@@ -8,10 +8,14 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.speech.tts.TextToSpeech
@@ -61,7 +65,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         ensureTtsInitialized()
     }
 
-    override fun onStartCommand(intent: android.content.Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         logDebug("onStartCommand: asegurando foreground")
         startListenerForeground()
         return START_STICKY
@@ -72,6 +76,23 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         ListenerDiagnostics.markListenerConnected(this)
         logDebug("Notification listener conectado")
         ensureTtsInitialized()
+
+        // Re-procesar notificaciones activas que llegaron mientras el servicio estaba inactivo
+        try {
+            val activeNotifications = getActiveNotifications()
+            activeNotifications?.forEach { sbn ->
+                val pkg = sbn.packageName
+                // Pre-filtrado rapido para evitar procesar toda la bandeja si no es necesario
+                if (pkg == "com.bcp.innovacxion.yapeapp" || 
+                    pkg == "pe.interbank.plin" || 
+                    pkg == "com.whatsapp" || 
+                    pkg == "com.whatsapp.w4b") {
+                    onNotificationPosted(sbn)
+                }
+            }
+        } catch (e: Exception) {
+            logDebug("Error procesando notificaciones activas: ${e.message}")
+        }
     }
 
     override fun onListenerDisconnected() {
@@ -202,6 +223,24 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             return "$t$u"
         }
         return n.toString()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        logDebug("onTaskRemoved: Programando reinicio del servicio")
+        val restartIntent = Intent(applicationContext, PagoNotificationListener::class.java).apply {
+            setPackage(packageName)
+        }
+        val restartPendingIntent = PendingIntent.getService(
+            this, 1, restartIntent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+        alarmManager.set(
+            AlarmManager.ELAPSED_REALTIME,
+            SystemClock.elapsedRealtime() + 1000,
+            restartPendingIntent
+        )
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
