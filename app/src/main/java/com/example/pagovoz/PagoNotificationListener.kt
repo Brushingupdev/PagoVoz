@@ -518,7 +518,6 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             .setContentTitle(getString(R.string.app_name))
             .setContentText("Escuchando pagos...")
             .setOngoing(true)
-            .setSilent(true)
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
