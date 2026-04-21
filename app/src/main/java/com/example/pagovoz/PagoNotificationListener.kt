@@ -9,6 +9,9 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.speech.tts.TextToSpeech
@@ -22,6 +25,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         private const val MAX_PENDING_ANNOUNCEMENTS = 100
         private const val FOREGROUND_NOTIFICATION_ID = 9001
         private const val FOREGROUND_CHANNEL_ID = "hablapago_listener_fg"
+        private const val WATCHDOG_TIMEOUT_MS = 25_000L
     }
 
     private lateinit var tts: TextToSpeech
@@ -34,6 +38,20 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     private var isSpeakingAnnouncement = false
     private var utteranceCounter = 0L
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var speechWakeLock: PowerManager.WakeLock? = null
+    private val watchdogHandler = Handler(Looper.getMainLooper())
+    private val announcementWatchdog = Runnable {
+        synchronized(speechLock) {
+            if (isSpeakingAnnouncement) {
+                logDebug("Watchdog: anuncio atascado por ${WATCHDOG_TIMEOUT_MS}ms, reseteando estado")
+                isSpeakingAnnouncement = false
+                releaseSpeechWakeLock()
+                if (pendingAnnouncements.isNotEmpty()) {
+                    speakAnnouncementLocked(pendingAnnouncements.removeFirst())
+                }
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -124,6 +142,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         logDebug("Pago detectado desde $packageName")
         ListenerDiagnostics.markPaymentCaptured(this, packageName, parsed.amount, parsed.sender)
         SessionManager.addPayment(this, parsed.amount, parsed.sender)
+        acquireSpeechWakeLock() // mantener CPU activo para que TTS pueda hablar en Doze mode
 
         val appName = PaymentSourceResolver.resolveAppName(packageName, fullText)
         val naturalAmount = convertAmountToNatural(parsed.amount)
@@ -179,6 +198,8 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     override fun onDestroy() {
         ListenerDiagnostics.markListenerDisconnected(this, "service_destroyed")
         stopForeground(STOP_FOREGROUND_REMOVE)
+        watchdogHandler.removeCallbacks(announcementWatchdog)
+        releaseSpeechWakeLock()
         if (::tts.isInitialized) {
             synchronized(speechLock) {
                 pendingAnnouncements.clear()
@@ -387,6 +408,9 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         val queuedMessages = synchronized(speechLock) {
             pendingAnnouncementsBeforeTts.toList().also { pendingAnnouncementsBeforeTts.clear() }
         }
+        if (queuedMessages.isNotEmpty()) {
+            acquireSpeechWakeLock() // pagos acumulados mientras TTS iniciaba
+        }
         queuedMessages.forEach { message ->
             speakWithRepeat(message)
         }
@@ -399,6 +423,8 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             } else {
                 isSpeakingAnnouncement = false
                 abandonSpeechAudioFocus()
+                watchdogHandler.removeCallbacks(announcementWatchdog)
+                releaseSpeechWakeLock()
             }
         }
     }
@@ -406,6 +432,8 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     private fun speakAnnouncementLocked(message: String) {
         utteranceCounter += 1
         isSpeakingAnnouncement = true
+        watchdogHandler.removeCallbacks(announcementWatchdog)
+        watchdogHandler.postDelayed(announcementWatchdog, WATCHDOG_TIMEOUT_MS)
         requestSpeechAudioFocus()
         val speakParams = Bundle().apply {
             putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f)
@@ -529,6 +557,22 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         } else {
             startForeground(FOREGROUND_NOTIFICATION_ID, notification)
         }
+    }
+
+    private fun acquireSpeechWakeLock() {
+        val wl = speechWakeLock
+        if (wl != null && wl.isHeld) return
+        speechWakeLock = getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HablaPago::PaymentAnnouncement")
+            .apply {
+                setReferenceCounted(false)
+                acquire(30_000L) // techo de seguridad: se libera solo tras 30s
+            }
+    }
+
+    private fun releaseSpeechWakeLock() {
+        speechWakeLock?.let { if (it.isHeld) it.release() }
+        speechWakeLock = null
     }
 
     private fun logDebug(message: String) {
