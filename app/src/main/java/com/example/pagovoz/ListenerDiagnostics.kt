@@ -5,6 +5,17 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+data class ListenerDiagnosticsSnapshot(
+    val connected: Boolean,
+    val lastConnectAt: Long,
+    val lastDisconnectAt: Long,
+    val lastNotificationAt: Long,
+    val lastPaymentAt: Long,
+    val lastRebindAt: Long,
+    val lastRebindForce: Boolean,
+    val eventLines: List<String>
+)
+
 object ListenerDiagnostics {
     private const val PREF_NAME = "listener_diagnostics"
     private const val KEY_CONNECTED = "connected"
@@ -85,6 +96,25 @@ object ListenerDiagnostics {
         val lastConnectAt = prefs.getLong(KEY_LAST_CONNECT_AT, 0L)
         val lastDisconnectAt = prefs.getLong(KEY_LAST_DISCONNECT_AT, 0L)
         return !connected || lastConnectAt == 0L || lastDisconnectAt > lastConnectAt
+    }
+
+    fun readSnapshot(context: Context): ListenerDiagnosticsSnapshot {
+        val prefs = prefs(context)
+        val lines = prefs.getString(KEY_EVENT_LOG, "").orEmpty()
+            .lineSequence()
+            .filter { it.isNotBlank() }
+            .toList()
+
+        return ListenerDiagnosticsSnapshot(
+            connected = prefs.getBoolean(KEY_CONNECTED, false),
+            lastConnectAt = prefs.getLong(KEY_LAST_CONNECT_AT, 0L),
+            lastDisconnectAt = prefs.getLong(KEY_LAST_DISCONNECT_AT, 0L),
+            lastNotificationAt = prefs.getLong(KEY_LAST_NOTIFICATION_AT, 0L),
+            lastPaymentAt = prefs.getLong(KEY_LAST_PAYMENT_AT, 0L),
+            lastRebindAt = prefs.getLong(KEY_LAST_REBIND_AT, 0L),
+            lastRebindForce = prefs.getBoolean(KEY_LAST_REBIND_FORCE, false),
+            eventLines = lines
+        )
     }
 
     private fun appendEvent(context: Context, event: String) {

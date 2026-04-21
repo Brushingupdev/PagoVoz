@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -27,11 +28,17 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,10 +51,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import com.example.pagovoz.ui.components.hablaPagoPressable
 import com.example.pagovoz.ui.theme.AppColors
 import com.example.pagovoz.ui.theme.AppRadii
 import com.example.pagovoz.ui.theme.AppSpacing
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,30 +74,40 @@ fun ProfileScreen(
     val trialDays = SessionManager.getPremiumDaysLeft(context)
     val selectedVoice = SessionManager.getTtsVoiceName(context)
         ?: context.getString(R.string.voice_pro_default_voice)
-    val serviceActive = isNotificationServiceEnabled(context)
+    val serviceActive = NotificationListenerHelper.isNotificationServiceEnabled(context)
     val deviceLabel = "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}"
+    var diagnosticsSnapshot by remember { mutableStateOf(ListenerDiagnostics.readSnapshot(context)) }
+
+    LaunchedEffect(context) {
+        while (true) {
+            diagnosticsSnapshot = ListenerDiagnostics.readSnapshot(context)
+            delay(1500)
+        }
+    }
 
     BackHandler { onBack() }
 
     Scaffold(
         topBar = {
-            AppSectionTopBar(
-                title = stringResource(R.string.profile_title),
-                onBack = onBack
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.profile_title),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             )
         },
-        containerColor = Color(0xFF090B10),
-        bottomBar = {
-            DashboardBottomBar(selectedTab = DashboardTab.Premium) { tab ->
-                when (tab) {
-                    DashboardTab.Home -> onBack()
-                    DashboardTab.History -> onShowHistory()
-                    DashboardTab.Payments -> onShowPayments()
-                    DashboardTab.Reports -> onShowReports()
-                    DashboardTab.Premium -> onShowPremium()
-                }
-            }
-        }
+        containerColor = Color(0xFF090B10)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -131,6 +151,8 @@ fun ProfileScreen(
                 deviceLabel = deviceLabel,
                 serviceActive = serviceActive
             )
+
+            ProfileDiagnosticsSection(snapshot = diagnosticsSnapshot)
         }
     }
 }
@@ -355,7 +377,7 @@ private fun ProfileDeviceSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        DashboardSectionHeader(
+        ProfileSectionHeader(
             title = stringResource(R.string.profile_device_title),
             subtitle = stringResource(R.string.profile_device_hint)
         )
@@ -387,6 +409,98 @@ private fun ProfileDeviceSection(
         }
     }
 }
+
+@Composable
+private fun ProfileDiagnosticsSection(snapshot: ListenerDiagnosticsSnapshot) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        ProfileSectionHeader(
+            title = "Diagnostico",
+            subtitle = "Ultimos eventos del listener y la voz para detectar por que un cobro no se anuncio."
+        )
+
+        androidx.compose.material3.Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(AppRadii.lg),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ProfileInfoRow(
+                    label = "Listener",
+                    value = if (snapshot.connected) "Conectado" else "Desconectado",
+                    accent = if (snapshot.connected) AppColors.PlinCyan else MaterialTheme.colorScheme.error
+                )
+                ProfileInfoDivider()
+                ProfileInfoRow(
+                    label = "Ultima notificacion",
+                    value = formatDiagnosticTime(snapshot.lastNotificationAt)
+                )
+                ProfileInfoDivider()
+                ProfileInfoRow(
+                    label = "Ultimo pago captado",
+                    value = formatDiagnosticTime(snapshot.lastPaymentAt)
+                )
+                ProfileInfoDivider()
+                ProfileInfoRow(
+                    label = "Ultimo rebind",
+                    value = buildString {
+                        append(formatDiagnosticTime(snapshot.lastRebindAt))
+                        if (snapshot.lastRebindAt > 0L) {
+                            append(if (snapshot.lastRebindForce) " (force)" else " (soft)")
+                        }
+                    }
+                )
+                ProfileInfoDivider()
+                ProfileInfoRow(
+                    label = "Ultima conexion",
+                    value = formatDiagnosticTime(snapshot.lastConnectAt)
+                )
+                if (snapshot.lastDisconnectAt > 0L) {
+                    ProfileInfoDivider()
+                    ProfileInfoRow(
+                        label = "Ultima desconexion",
+                        value = formatDiagnosticTime(snapshot.lastDisconnectAt),
+                        accent = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                ProfileInfoDivider()
+                Text(
+                    text = "Eventos recientes",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                )
+
+                if (snapshot.eventLines.isEmpty()) {
+                    Text(
+                        text = "Aun no hay eventos registrados.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        snapshot.eventLines.take(10).forEach { line ->
+                            Text(
+                                text = line,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun ProfileInfoRow(
@@ -446,7 +560,6 @@ private fun ProfileActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .hablaPagoPressable(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -505,4 +618,31 @@ private fun ProfileActionRow(
             )
         }
     }
+}
+
+@Composable
+private fun ProfileSectionHeader(
+    title: String,
+    subtitle: String
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+        )
+        Text(
+            text = subtitle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+private fun formatDiagnosticTime(timestamp: Long): String {
+    if (timestamp <= 0L) return "---"
+    return SimpleDateFormat("dd/MM HH:mm:ss", Locale.US).format(Date(timestamp))
 }

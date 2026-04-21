@@ -53,7 +53,7 @@ object PaymentNotificationParser {
         "actualiza tu app", "nueva versi\u00F3n", "nueva version"
     )
 
-    fun isSupportedPackage(packageName: String): Boolean {
+    private fun isSupportedPackage(packageName: String): Boolean {
         return packageName in supportedPackages
     }
 
@@ -217,15 +217,6 @@ object PaymentNotificationParser {
      */
     private fun isPromotional(normalizedLower: String): Boolean {
         return promotionalBlacklist.any { keyword -> normalizedLower.contains(keyword) }
-    }
-
-    /**
-     * Returns true if the text contains at least one real payment signal
-     * (e.g. "recibiste", "te envió", "confirmación de pago").
-     * Must be called with a lowercase-normalized string.
-     */
-    private fun hasPaymentSignal(normalizedLower: String): Boolean {
-        return paymentSignals.any { signal -> normalizedLower.contains(signal) }
     }
 
     private fun normalizeText(value: String): String {

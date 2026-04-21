@@ -42,10 +42,6 @@ fun HablaPagoTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    @Suppress("UNUSED_VARIABLE")
-    val ignoredDarkTheme = darkTheme
-    @Suppress("UNUSED_VARIABLE")
-    val ignoredDynamicColor = dynamicColor
     val colorScheme = FixedColorScheme
 
     MaterialTheme(

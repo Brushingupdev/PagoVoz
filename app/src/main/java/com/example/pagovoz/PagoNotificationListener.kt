@@ -1,6 +1,9 @@
 package com.example.pagovoz
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -9,20 +12,22 @@ import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.speech.tts.TextToSpeech
-import android.speech.tts.Voice
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.util.Log
 import java.util.Locale
 
 class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnInitListener {
     companion object {
         private const val MAX_PENDING_ANNOUNCEMENTS = 100
+        private const val FOREGROUND_NOTIFICATION_ID = 9001
+        private const val FOREGROUND_CHANNEL_ID = "hablapago_listener_fg"
     }
 
     private lateinit var tts: TextToSpeech
     private var ttsReady = false
     private val tag = "HablaPagoListener"
-    private val recentNotifications = mutableSetOf<String>()
+    private val notificationGate = PaymentNotificationGate()
     private val speechLock = Any()
     private val pendingAnnouncements = ArrayDeque<String>()
     private val pendingAnnouncementsBeforeTts = ArrayDeque<String>()
@@ -34,6 +39,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         super.onCreate()
         ListenerDiagnostics.markListenerCreated(this)
         logDebug("Servicio creado")
+        startListenerForeground()
         ensureTtsInitialized()
     }
 
@@ -93,31 +99,33 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
         val bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
 
-        if (!PaymentNotificationParser.shouldInspect(packageName, fullText)) {
-            ListenerDiagnostics.markPaymentIgnored(this, packageName, "filtered_before_parse")
-            return
+        val notificationKey = buildNotificationKey(sbn)
+        val gateResult = notificationGate.evaluate(
+            packageName = packageName,
+            fullText = fullText,
+            notificationKey = notificationKey
+        )
+
+        val parsed = when (gateResult) {
+            is PaymentNotificationGateResult.Accepted -> gateResult.payment
+            is PaymentNotificationGateResult.Ignored -> {
+                if (gateResult.reason != "duplicate_processed") {
+                    ListenerDiagnostics.markPaymentIgnored(this, packageName, gateResult.reason)
+                }
+                if (gateResult.reason == "parse_null") {
+                    logDebug(
+                        "No se reconocio un formato de pago compatible para $packageName. " +
+                            "title='$title' text='$text' bigText='$bigText' fullText='$fullText'"
+                    )
+                }
+                return
+            }
         }
-
-        val uniqueKey = "${packageName}_${sbn.postTime}_${sbn.id}"
-        if (recentNotifications.contains(uniqueKey)) return
-        recentNotifications.add(uniqueKey)
-        if (recentNotifications.size > 50) recentNotifications.clear()
-
-        val parsed = PaymentNotificationParser.parse(packageName, fullText)
-        if (parsed == null) {
-            ListenerDiagnostics.markPaymentIgnored(this, packageName, "parse_null")
-            logDebug(
-                "No se reconocio un formato de pago compatible para $packageName. " +
-                    "title='$title' text='$text' bigText='$bigText' fullText='$fullText'"
-            )
-            return
-        }
-
         logDebug("Pago detectado desde $packageName")
         ListenerDiagnostics.markPaymentCaptured(this, packageName, parsed.amount, parsed.sender)
         SessionManager.addPayment(this, parsed.amount, parsed.sender)
 
-        val appName = resolvePaymentAppName(packageName, fullText)
+        val appName = PaymentSourceResolver.resolveAppName(packageName, fullText)
         val naturalAmount = convertAmountToNatural(parsed.amount)
         val message = buildSpeechMessage(
             appName = appName,
@@ -146,8 +154,8 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
         val centsText = when {
             cents == 0 -> ""
-            cents == 1 -> "con un céntimo"
-            else -> "con ${numberToWords(cents)} céntimos"
+            cents == 1 -> "con un centimo"
+            else -> "con ${numberToWords(cents)} centimos"
         }
 
         return "$integerText $centsText".trim()
@@ -155,7 +163,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
     private fun numberToWords(n: Int): String {
         val units = arrayOf("", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve")
-        val specials = arrayOf("diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve")
+        val specials = arrayOf("diez", "once", "doce", "trece", "catorce", "quince", "dieciseis", "diecisiete", "dieciocho", "diecinueve")
         val tens = arrayOf("", "", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa")
 
         if (n < 10) return units[n]
@@ -170,6 +178,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
 
     override fun onDestroy() {
         ListenerDiagnostics.markListenerDisconnected(this, "service_destroyed")
+        stopForeground(STOP_FOREGROUND_REMOVE)
         if (::tts.isInitialized) {
             synchronized(speechLock) {
                 pendingAnnouncements.clear()
@@ -183,7 +192,32 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
     }
 
     private fun ensureTtsInitialized() {
-        if (::tts.isInitialized) return
+        // If TTS is ready, nothing to do.
+        if (::tts.isInitialized && ttsReady) return
+
+        if (::tts.isInitialized) {
+            // TTS object exists but ttsReady=false. This happens when Android briefly
+            // disconnects and reconnects the listener — onListenerDisconnected() sets
+            // ttsReady=false but onListenerConnected() skips re-init.
+            // Restart TTS to trigger onInit() and flush any pending announcements.
+            restartTtsEngine("reconnect_not_ready")
+            return
+        }
+
+        tts = TextToSpeech(applicationContext, this)
+    }
+
+    private fun restartTtsEngine(reason: String) {
+        ttsReady = false
+        if (::tts.isInitialized) {
+            runCatching {
+                tts.stop()
+                tts.shutdown()
+            }.onFailure {
+                logDebug("No se pudo reiniciar TTS limpiamente tras $reason: ${it.message}")
+            }
+        }
+        logDebug("Reiniciando TTS tras $reason")
         tts = TextToSpeech(applicationContext, this)
     }
 
@@ -256,7 +290,7 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
             return
         }
 
-        logDebug("No se encontró una voz en español soportada; usando configuración por defecto del motor")
+        logDebug("No se encontro una voz en espanol soportada; usando configuracion por defecto del motor")
     }
 
     private fun requestSpeechAudioFocus() {
@@ -292,18 +326,6 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         } else {
             @Suppress("DEPRECATION")
             audioManager.abandonAudioFocus(null)
-        }
-    }
-
-    private fun resolvePaymentAppName(packageName: String, fullText: String): String {
-        val normalized = fullText.lowercase(Locale.ROOT)
-        val mentionsPlin = normalized.contains("plin") || normalized.contains("plineo") || normalized.contains("plineó")
-        return if (mentionsPlin) {
-            "Plin"
-        } else if (packageName == PaymentNotificationParser.YAPE_PACKAGE) {
-            "Yape"
-        } else {
-            "Plin"
         }
     }
 
@@ -392,10 +414,22 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
         val result = tts.speak(message, TextToSpeech.QUEUE_FLUSH, speakParams, "pago_id_$utteranceCounter")
         if (result == TextToSpeech.ERROR) {
             ListenerDiagnostics.markTtsError(this, "speak_error")
-            logDebug("TTS devolvió ERROR al intentar anunciar el pago")
+            logDebug("TTS devolvio ERROR al intentar anunciar el pago")
+            val retryMessages = buildList {
+                add(message)
+                addAll(pendingAnnouncements)
+            }
+            pendingAnnouncements.clear()
             isSpeakingAnnouncement = false
             abandonSpeechAudioFocus()
+            retryMessages.forEach(::enqueuePendingAnnouncement)
+            restartTtsEngine("speak_error")
         }
+    }
+
+    private fun buildNotificationKey(sbn: StatusBarNotification): String {
+        val baseKey = sbn.key.ifBlank { "${sbn.packageName}:${sbn.id}:${sbn.tag.orEmpty()}" }
+        return "$baseKey:${sbn.postTime}"
     }
 
     private fun buildNotificationText(notification: Notification): String {
@@ -464,6 +498,38 @@ class PagoNotificationListener : NotificationListenerService(), TextToSpeech.OnI
                     .thenBy { it.latency }
             )
             .firstOrNull()
+    }
+
+    private fun startListenerForeground() {
+        val channel = NotificationChannel(
+            FOREGROUND_CHANNEL_ID,
+            "HablaPago activo",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "HablaPago está escuchando pagos en segundo plano"
+            setShowBadge(false)
+            enableLights(false)
+            enableVibration(false)
+        }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+
+        val notification = Notification.Builder(this, FOREGROUND_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_activation_mic)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText("Escuchando pagos...")
+            .setOngoing(true)
+            .setSilent(true)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                FOREGROUND_NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(FOREGROUND_NOTIFICATION_ID, notification)
+        }
     }
 
     private fun logDebug(message: String) {

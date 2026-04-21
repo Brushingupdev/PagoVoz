@@ -196,41 +196,25 @@ object SessionManager {
         }
     }
 
-    fun getDailyTotal(context: Context): Float =
-        run {
-            resetIfNewDay(context)
-        centsToFloat(
-            readAmountCents(
-                prefs(context),
-                KEY_TOTAL_AMOUNT_CENTS,
-                KEY_TOTAL_AMOUNT
-            )
-        )
-        }
+    fun getDailyTotal(context: Context): Float {
+        resetIfNewDay(context)
+        return centsToFloat(readAmountCents(prefs(context), KEY_TOTAL_AMOUNT_CENTS, KEY_TOTAL_AMOUNT))
+    }
 
-    fun getDailyCount(context: Context): Int =
-        run {
-            resetIfNewDay(context)
-            prefs(context).getInt(KEY_TOTAL_COUNT, 0)
-        }
+    fun getDailyCount(context: Context): Int {
+        resetIfNewDay(context)
+        return prefs(context).getInt(KEY_TOTAL_COUNT, 0)
+    }
 
-    fun getYesterdayTotal(context: Context): Float =
-        run {
-            resetIfNewDay(context)
-        centsToFloat(
-            readAmountCents(
-                prefs(context),
-                KEY_YESTERDAY_TOTAL_CENTS,
-                KEY_YESTERDAY_TOTAL
-            )
-        )
-        }
+    fun getYesterdayTotal(context: Context): Float {
+        resetIfNewDay(context)
+        return centsToFloat(readAmountCents(prefs(context), KEY_YESTERDAY_TOTAL_CENTS, KEY_YESTERDAY_TOTAL))
+    }
 
-    fun getYesterdayCount(context: Context): Int =
-        run {
-            resetIfNewDay(context)
-            prefs(context).getInt(KEY_YESTERDAY_COUNT, 0)
-        }
+    fun getYesterdayCount(context: Context): Int {
+        resetIfNewDay(context)
+        return prefs(context).getInt(KEY_YESTERDAY_COUNT, 0)
+    }
 
     fun getYesterdayHistory(context: Context): List<PaymentRecord> {
         resetIfNewDay(context)
@@ -242,11 +226,10 @@ object SessionManager {
         }
     }
 
-    fun getYesterdayDate(context: Context): String =
-        run {
-            resetIfNewDay(context)
-            prefs(context).getString(KEY_YESTERDAY_DATE, "---") ?: "---"
-        }
+    fun getYesterdayDate(context: Context): String {
+        resetIfNewDay(context)
+        return prefs(context).getString(KEY_YESTERDAY_DATE, "---") ?: "---"
+    }
 
     /**
      * Returns all payments from the last [MULTI_DAY_HISTORY_DAYS] days, sorted by timestamp DESC.
